@@ -8,5 +8,6 @@ public class Branch {
     private String id;
     private String phone;
     private String instituteId;
+    private LatLng location;
 }
 
