@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -41,14 +40,14 @@ public class InstituteController {
 
     @PostMapping
     public void createInstitute(Institute institute) {
-        if (Stream.of(institute.getEmail(), institute.getLogoUrl(), institute.getName(), institute.getPhone()).anyMatch(Objects::isNull))
+        if (Stream.of(institute.getEmail(), institute.getLogoUrl(), institute.getName(), institute.getPhone()).anyMatch(StringUtils::isEmpty))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         instituteService.createInstitute(institute);
     }
 
     @PutMapping("/{id}")
     public void updateInstitute(@PathVariable String id, @RequestBody Institute institute) {
-        if (Stream.of(institute.getEmail(), institute.getLogoUrl(), institute.getName(), institute.getPhone()).anyMatch(Objects::isNull))
+        if (Stream.of(id, institute.getEmail(), institute.getLogoUrl(), institute.getName(), institute.getPhone()).anyMatch(StringUtils::isEmpty))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         instituteService.saveInstitute(institute);
     }

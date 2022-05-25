@@ -12,7 +12,6 @@ import java.util.List;
 @RequestMapping("/queues")
 public class QueueController {
 
-
     @GetMapping("/active/{userId}")
     public List<BookedTurnQueue> getActiveQueues(@PathVariable String userId) {
         return new ArrayList<>();
