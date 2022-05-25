@@ -39,7 +39,7 @@ public class InstituteService {
 
     public List<Institute> searchInstitutes(Optional<String> searchTerm) {
         if (searchTerm.isPresent()) {
-            return institutesDAO.findByNameOrIdContaining(searchTerm.get()).stream().map(this::mapFromEntity).collect(Collectors.toList());
+            return institutesDAO.findByNameOrIdContaining(searchTerm.get(), searchTerm.get()).stream().map(this::mapFromEntity).collect(Collectors.toList());
         } else {
             return institutesDAO.findAll().stream().map(this::mapFromEntity).collect(Collectors.toList());
         }

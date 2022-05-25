@@ -1,8 +1,11 @@
 package gp.backend.controllers;
 
 import gp.backend.dto.BookedTurnQueue;
+import gp.backend.dto.LatLng;
 import gp.backend.dto.Queue;
 import gp.backend.dto.QueueSpec;
+import gp.backend.service.QueueService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -10,7 +13,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/queues")
+@RequiredArgsConstructor
 public class QueueController {
+
+    private final QueueService queueService;
 
     @GetMapping("/active/{userId}")
     public List<BookedTurnQueue> getActiveQueues(@PathVariable String userId) {
@@ -19,7 +25,6 @@ public class QueueController {
 
     @GetMapping("/archived/{userId}")
     public List<BookedTurnQueue> getArchivedQueues(@PathVariable String userId) {
-
         return new ArrayList<>();
     }
 
@@ -41,7 +46,12 @@ public class QueueController {
 
 
     @PutMapping("/queue/book")
-    public void bookQueue(@RequestParam String userId, @RequestParam String queueId, @RequestParam String branchId) {
+    public void bookQueue(@RequestParam String userId, @RequestParam String queueId, @RequestParam String branchId, @RequestParam LatLng location) {
+
+    }
+
+    @DeleteMapping("/queue/book")
+    public void cancelTurn(@RequestParam String userId, @RequestParam String queueId, @RequestParam String branchId) {
 
     }
 
