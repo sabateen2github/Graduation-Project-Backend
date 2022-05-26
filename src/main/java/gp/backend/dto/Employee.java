@@ -10,11 +10,11 @@ public class Employee {
 
     private String name;
     private String id;
-    private String profilePic;
     private String fullName;
     private Date dateOfBirth;
     private String username;
     private Optional<String> password;
+    private Optional<String> profilePic;
     private String email;
     private String phone;
     private String branchId;
@@ -22,12 +22,10 @@ public class Employee {
 
     public enum AccountType {
         HELP_DESK(0), MANAGEMENT(1), ADMIN(2);
-
         private int intValue;
 
         AccountType(int value) {
             intValue = value;
         }
-
     }
 }

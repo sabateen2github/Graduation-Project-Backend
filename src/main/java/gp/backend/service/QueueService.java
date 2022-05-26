@@ -10,6 +10,6 @@ import org.springframework.stereotype.Service;
 public class QueueService {
 
     private final QueueDAO queueDAO;
-    private BookedTurnQueueDAO bookedTurnQueueDAO;
+    private final BookedTurnQueueDAO bookedTurnQueueDAO;
 
 }
