@@ -2,10 +2,12 @@ package gp.backend.controllers;
 
 import gp.backend.dto.Institute;
 import gp.backend.service.InstituteService;
+import gp.backend.service.UploadService;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -18,6 +20,7 @@ import java.util.stream.Stream;
 public class InstituteController {
 
     private final InstituteService instituteService;
+    private final UploadService uploadService;
 
     @GetMapping
     public List<Institute> searchInstitutes(@RequestParam Optional<String> searchTerms) {
@@ -39,16 +42,28 @@ public class InstituteController {
     }
 
     @PostMapping
-    public void createInstitute(Institute institute) {
-        if (Stream.of(institute.getEmail(), institute.getLogoUrl(), institute.getName(), institute.getPhone()).anyMatch(StringUtils::isEmpty))
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-        instituteService.createInstitute(institute);
+    public void createInstitute(@RequestPart Institute institute, @RequestPart Optional<MultipartFile> profilePic) {
+        Optional<String> uploadUrl = handleInstitute(institute, profilePic);
+        instituteService.createInstitute(institute, uploadUrl);
     }
 
-    @PutMapping("/{id}")
-    public void updateInstitute(@PathVariable String id, @RequestBody Institute institute) {
-        if (Stream.of(id, institute.getEmail(), institute.getLogoUrl(), institute.getName(), institute.getPhone()).anyMatch(StringUtils::isEmpty))
+    @PutMapping()
+    public void updateInstitute(@RequestPart Institute institute, @RequestPart Optional<MultipartFile> profilePic) {
+        Optional<String> uploadUrl = handleInstitute(institute, profilePic);
+        instituteService.saveInstitute(institute, uploadUrl);
+
+    }
+
+    private Optional<String> handleInstitute(Institute institute, Optional<MultipartFile> profilePic) {
+        if (!validateInstitute(institute))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-        instituteService.saveInstitute(institute);
+        Optional<String> uploadUrl = Optional.empty();
+        if (profilePic.isPresent())
+            uploadUrl = Optional.of(uploadService.upload(profilePic.get()));
+        return uploadUrl;
+    }
+
+    private boolean validateInstitute(Institute institute) {
+        return Stream.of(institute.getEmail(), institute.getName(), institute.getPhone()).anyMatch(StringUtils::isEmpty);
     }
 }

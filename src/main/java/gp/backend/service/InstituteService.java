@@ -24,7 +24,7 @@ public class InstituteService {
         institute.setEmail(item.getEmail());
         institute.setName(item.getName());
         institute.setPhone(item.getPhone());
-        institute.setLogoUrl(item.getLogoUrl());
+        institute.setLogoUrl(Optional.ofNullable(item.getLogoUrl()));
         return institute;
     }
 
@@ -33,7 +33,7 @@ public class InstituteService {
         institute.setEmail(item.getEmail());
         institute.setName(item.getName());
         institute.setPhone(item.getPhone());
-        institute.setLogoUrl(item.getLogoUrl());
+        institute.setLogoUrl(item.getLogoUrl().get());
         return institute;
     }
 
@@ -58,11 +58,13 @@ public class InstituteService {
         institutesDAO.deleteById(validatedId);
     }
 
-    public void createInstitute(Institute validatedInstitute) {
+    public void createInstitute(Institute validatedInstitute, Optional<String> logoPic) {
+        validatedInstitute.setLogoUrl(logoPic);
         institutesDAO.save(mapToEntity(validatedInstitute));
     }
 
-    public void saveInstitute(Institute validatedInstitute) {
+    public void saveInstitute(Institute validatedInstitute, Optional<String> logoPic) {
+        validatedInstitute.setLogoUrl(logoPic);
         institutesDAO.save(mapToEntity(validatedInstitute));
 
     }
