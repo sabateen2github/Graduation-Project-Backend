@@ -1,10 +1,17 @@
 package gp.backend.service;
 
 import gp.backend.data.BookedTurnQueueDAO;
+import gp.backend.data.BranchDAO;
+import gp.backend.data.InstitutesDAO;
 import gp.backend.data.QueueDAO;
 import gp.backend.data.entities.BookedTurnQueueEntity;
+import gp.backend.data.entities.BranchEntity;
+import gp.backend.data.entities.InstituteEntity;
 import gp.backend.data.entities.QueueEntity;
-import gp.backend.dto.*;
+import gp.backend.dto.BookedTurnQueue;
+import gp.backend.dto.LatLng;
+import gp.backend.dto.Queue;
+import gp.backend.dto.QueueSpec;
 import gp.backend.security.DurationServiceException;
 import gp.backend.service.beans.QueueLockKey;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -25,7 +33,8 @@ public class QueueService {
 
     private final QueueDAO queueDAO;
     private final BookedTurnQueueDAO bookedTurnQueueDAO;
-    private final BranchService branchService;
+    private final BranchDAO branchDAO;
+    private final InstitutesDAO institutesDAO;
     private final DistanceService distanceService;
     private final LockService locksService;
 
@@ -76,6 +85,8 @@ public class QueueService {
             queueEntity.setPhysicalSize(queueEntity.getPhysicalSize() - 1);
             queueEntity.setQueueSize(queueEntity.getQueueSize() - 1);
 
+            updateAverageTime(queueEntity);
+
             BookedTurnQueueEntity bookedEntity = bookedTurnQueueDAO.findById_QueueIdAndTurnId(id, queueEntity.getCurrentTurnId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
             bookedEntity.setState(BookedTurnQueue.QueueState.COMPLETED);
 
@@ -93,15 +104,32 @@ public class QueueService {
         });
     }
 
+    private void updateAverageTime(QueueEntity queueEntity) {
+        if (queueEntity.getStart() == null) {
+            queueEntity.setStart(new Date());
+        } else {
+            long durationMins = ((new Date()).getTime() - queueEntity.getStart().getTime()) / 1000;
+            queueEntity.setStart(new Date());
+            if (durationMins < 60 * 2) {
+                queueEntity.setAverageTime((int) ((durationMins + queueEntity.getCount() * queueEntity.getAverageTime()) / (queueEntity.getCount() + 1)));
+            }
+            if (queueEntity.getCount() > 1000) queueEntity.setCount(1);
+        }
+    }
+
     @Transactional
     public void bookQueue(String userId, String branchId, String queueId, LatLng location) {
-        Branch branch = branchService.getBranch(branchId);
-        QueueLockKey queueLockKey = QueueLockKey.builder().queueId(queueId).branchId(branchId).instituteId(branch.getInstituteId()).build();
+        BranchEntity branch = branchDAO.findById(branchId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        QueueLockKey queueLockKey = QueueLockKey.builder().queueId(queueId).branchId(branchId).instituteId(branch.getInstitute().getId()).build();
         executeWithLock(queueLockKey, () -> {
             QueueEntity queueEntity = queueDAO.findById(queueId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-
             try {
-                long duration = distanceService.getDurationInSeconds(location, branch.getLocation());
+
+                LatLng latLng = new LatLng();
+                latLng.setLng(branch.getLongitude());
+                latLng.setLat(branch.getLatitude());
+
+                long duration = distanceService.getDurationInSeconds(location, latLng);
                 long allowedDuration = (long) queueEntity.getPhysicalSize() * queueEntity.getAverageTime() * 60;
                 if (duration * 0.9f > allowedDuration)
                     throw new ResponseStatusException(HttpStatus.UNAVAILABLE_FOR_LEGAL_REASONS);
@@ -128,8 +156,8 @@ public class QueueService {
 
     @Transactional
     public void cancelTurn(String userId, String branchId, String queueId) {
-        Branch branch = branchService.getBranch(branchId);
-        QueueLockKey queueLockKey = QueueLockKey.builder().queueId(queueId).branchId(branchId).instituteId(branch.getInstituteId()).build();
+        BranchEntity branch = branchDAO.findById(branchId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        QueueLockKey queueLockKey = QueueLockKey.builder().queueId(queueId).branchId(branchId).instituteId(branch.getInstitute().getId()).build();
         executeWithLock(queueLockKey, () -> {
 
             BookedTurnQueueEntity.CompositeId compositeId = new BookedTurnQueueEntity.CompositeId();
@@ -167,6 +195,21 @@ public class QueueService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         queueEntity.setName(queueSpec.getName());
         queueDAO.save(queueEntity);
+    }
+
+
+    public void createQueueSpec(String instituteId, QueueSpec queueSpec) {
+
+        InstituteEntity instituteEntity = institutesDAO.findById(instituteId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        BranchEntity branchEntity = branchDAO.findById(queueSpec.getBranchId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        QueueEntity queueEntity = new QueueEntity();
+        queueEntity.setName(queueSpec.getName());
+        queueEntity.setInstitute(instituteEntity);
+        queueEntity.setBranch(branchEntity);
+        queueEntity.setAverageTime(5);
+        queueDAO.save(queueEntity);
+
     }
 
     public void toggleQueueMode(String instituteId, String userId, String branchId, String queueId) {

@@ -99,6 +99,15 @@ public class QueueController {
 
     @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT')")
+    @PostMapping("/queue")
+    public void createQueueSpec(@RequestBody QueueSpec queueSpec) {
+        if (queueSpec == null || StringUtils.isEmpty(queueSpec.getName()) || StringUtils.isEmpty(queueSpec.getId()) || StringUtils.isEmpty(queueSpec.getBranchId()))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        queueService.createQueueSpec((String) SecurityContextHolder.getContext().getAuthentication().getCredentials(), queueSpec);
+    }
+
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT')")
     @DeleteMapping("/queue")
     public void deleteQueue(@RequestParam String id, @RequestParam String branchId) {
         if (StringUtils.isEmpty(id) || StringUtils.isEmpty(branchId))

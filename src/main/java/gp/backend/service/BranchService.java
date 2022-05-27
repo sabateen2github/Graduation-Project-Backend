@@ -66,7 +66,6 @@ public class BranchService {
 
     public void createBranch(String instituteId, Branch validatedBranch) {
 
-
         InstituteEntity instituteEntity = institutesDAO.findById(instituteId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         if (instituteEntity.getId().equals(instituteId)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);

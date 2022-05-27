@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import javax.persistence.*;
+import java.util.Date;
 
 @Entity
 @Getter
@@ -29,5 +30,8 @@ public class QueueEntity {
     private int remoteSize;
     private int averageTime;
     private String currentTurnId;
+
+    private Date start;
+    private int count;
 
 }

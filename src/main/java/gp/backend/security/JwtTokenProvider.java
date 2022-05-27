@@ -83,6 +83,23 @@ public class JwtTokenProvider {
         return adminWebToken;
     }
 
+
+    public synchronized String generateAdminToken(String instituteId) {
+
+        Claims claims = Jwts.claims().setSubject(username);
+        claims.put("auth", Arrays.asList(new SimpleGrantedAuthority(AppUserRole.ROLE_ADMIN.getAuthority())));
+        claims.put("instituteId", instituteId);
+        Date now = new Date();
+        Date validity = new Date(now.getTime() + validityInMilliseconds);
+        return Jwts.builder()//
+                .setClaims(claims)//
+                .setIssuedAt(now)//
+                .setExpiration(validity)//
+                .signWith(SignatureAlgorithm.HS256, secretKey)//
+                .compact();
+
+    }
+
     private List<AppUserRole> getRoles(String token) {
 
         List<String> roles = Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token).getBody().get("auth", List.class);

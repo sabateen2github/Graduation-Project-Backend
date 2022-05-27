@@ -53,7 +53,7 @@ public class InstituteController {
     @PostMapping
     public void createInstitute(@RequestPart Institute institute, @RequestPart Optional<MultipartFile> profilePic) {
         Optional<String> uploadUrl = handleInstitute(institute, profilePic);
-        instituteService.createInstitute(institute, uploadUrl);
+        instituteService.createInstitute(institute, uploadUrl, false);
     }
 
     @Operation(security = @SecurityRequirement(name = "bearerAuth"))
@@ -63,6 +63,15 @@ public class InstituteController {
         Optional<String> uploadUrl = handleInstitute(institute, profilePic);
         instituteService.saveInstitute((String) SecurityContextHolder.getContext().getAuthentication().getCredentials(), institute, uploadUrl);
 
+    }
+
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @GetMapping("/login/{id}")
+    public String loginAsInstitute(@PathVariable String id) {
+        if (StringUtils.isEmpty(id))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        return instituteService.getJWTToken(id);
     }
 
     private Optional<String> handleInstitute(Institute institute, Optional<MultipartFile> profilePic) {

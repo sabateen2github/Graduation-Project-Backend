@@ -1,7 +1,6 @@
 package gp.backend;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -11,7 +10,7 @@ import org.springframework.web.client.RestTemplate;
 
 @SpringBootApplication
 @RequiredArgsConstructor
-public class Main implements CommandLineRunner {
+public class Main {
 
 
     public static void main(String[] args) {
@@ -23,8 +22,4 @@ public class Main implements CommandLineRunner {
         return restTemplateBuilder.build();
     }
 
-    @Override
-    public void run(String... args) throws Exception {
-
-    }
 }

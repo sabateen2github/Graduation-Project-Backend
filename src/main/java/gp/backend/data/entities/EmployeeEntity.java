@@ -28,11 +28,11 @@ public class EmployeeEntity {
     private String phone;
     private Employee.AccountType accountType;
 
-    @ManyToOne(optional = false)
+    @ManyToOne
     @JoinColumn(name = "branch_id")
     private BranchEntity branch;
 
-
+    
     @ManyToOne(optional = false)
     @JoinColumn(name = "institute_id")
     private InstituteEntity institute;

@@ -2,18 +2,19 @@ package gp.backend.service;
 
 import gp.backend.auth.handler.UserControllerApi;
 import gp.backend.auth.model.UserDataDTO;
+import gp.backend.data.BranchDAO;
 import gp.backend.data.EmployeeDAO;
+import gp.backend.data.InstitutesDAO;
 import gp.backend.data.entities.BranchEntity;
 import gp.backend.data.entities.EmployeeEntity;
+import gp.backend.data.entities.InstituteEntity;
 import gp.backend.dto.Employee;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import javax.persistence.EntityManager;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -25,38 +26,8 @@ public class EmployeeService {
 
     private final UserControllerApi authApi;
     private final EmployeeDAO employeeDAO;
-
-    private final EntityManager entityManager;
-
-
-    @Transactional
-    public void createEmployee(Employee validatedEmployee, String instituteId, Optional<String> profilePic) {
-        if (employeeDAO.findByInstitute_IdAndId(instituteId, validatedEmployee.getId()).isPresent()) {
-            handleSave(validatedEmployee, instituteId, profilePic);
-        } else throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-    }
-
-    private void handleSave(Employee validatedEmployee, String instituteId, Optional<String> profilePic) {
-        UserDataDTO userDataDTO = new UserDataDTO();
-
-        if (validatedEmployee.getAccountType() == Employee.AccountType.MANAGEMENT) {
-            userDataDTO.setAppUserRoles(Arrays.asList(UserDataDTO.AppUserRolesEnum.MANAGEMENT));
-        } else if (validatedEmployee.getAccountType() == Employee.AccountType.HELP_DESK)
-            userDataDTO.setAppUserRoles(Arrays.asList(UserDataDTO.AppUserRolesEnum.HELP_DESK));
-        else throw new RuntimeException("Invalid account type!");
-
-        userDataDTO.setUsername(validatedEmployee.getUsername());
-        userDataDTO.setPassword(validatedEmployee.getPassword().get());
-        userDataDTO.setInstituteId(instituteId);
-
-        if (!profilePic.isPresent())
-            profilePic = Optional.of("./content/default-profile-pic.png");
-
-        EmployeeEntity employeeEntity = fillEntity(validatedEmployee, profilePic);
-        employeeDAO.save(employeeEntity);
-
-        authApi.signup(userDataDTO);
-    }
+    private final BranchDAO branchDAO;
+    private final InstitutesDAO institutesDAO;
 
 
     public Employee getEmployee(String instituteId, String validatedId) {
@@ -64,16 +35,49 @@ public class EmployeeService {
         return fillDTO(employeeEntity);
     }
 
-    public void editEmployee(Employee validatedEmployee, String instituteId, Optional<String> profilePic) {
-        if (employeeDAO.findByInstitute_IdAndId(instituteId, validatedEmployee.getId()).isPresent()) {
-            handleSave(validatedEmployee, instituteId, profilePic);
-        } else throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+    public void createEmployee(Employee validatedEmployee, String instituteId, Optional<String> profilePic) {
+        if (employeeDAO.findByUsername(validatedEmployee.getUsername()).isPresent())
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY);
+
+        InstituteEntity instituteEntity = institutesDAO.findById(instituteId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        if (validatedEmployee.getAccountType() == Employee.AccountType.ADMIN && !instituteEntity.isAdmin())
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        EmployeeEntity employeeEntity = new EmployeeEntity();
+        employeeEntity.setInstitute(instituteEntity);
+        saveEmployee(validatedEmployee, instituteId, employeeEntity, profilePic);
     }
 
-    private EmployeeEntity fillEntity(Employee validatedEmployee, Optional<String> profilePic) {
-        BranchEntity branchEntity = entityManager.getReference(BranchEntity.class, validatedEmployee.getBranchId());
-        EmployeeEntity employeeEntity = new EmployeeEntity();
-        employeeEntity.setBranch(branchEntity);
+    public void editEmployee(Employee validatedEmployee, String instituteId, Optional<String> profilePic) {
+        EmployeeEntity employeeEntity = employeeDAO.findByInstitute_IdAndId(instituteId, validatedEmployee.getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        if (validatedEmployee.getAccountType() == Employee.AccountType.ADMIN && !employeeEntity.getInstitute().isAdmin())
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        saveEmployee(validatedEmployee, instituteId, employeeEntity, profilePic);
+    }
+
+
+    private UserDataDTO getUserDataDTO(Employee validatedEmployee, String instituteId) {
+        UserDataDTO userDataDTO = new UserDataDTO();
+        if (validatedEmployee.getAccountType() == Employee.AccountType.MANAGEMENT) {
+            userDataDTO.setAppUserRoles(Arrays.asList(UserDataDTO.AppUserRolesEnum.MANAGEMENT));
+        } else if (validatedEmployee.getAccountType() == Employee.AccountType.HELP_DESK)
+            userDataDTO.setAppUserRoles(Arrays.asList(UserDataDTO.AppUserRolesEnum.HELP_DESK));
+        else if (validatedEmployee.getAccountType() == Employee.AccountType.ADMIN)
+            userDataDTO.setAppUserRoles(Arrays.asList(UserDataDTO.AppUserRolesEnum.ADMIN));
+        else throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED);
+        userDataDTO.setUsername(validatedEmployee.getUsername());
+        userDataDTO.setPassword(validatedEmployee.getPassword().get());
+        userDataDTO.setInstituteId(instituteId);
+        return userDataDTO;
+    }
+
+    private void saveEmployee(Employee validatedEmployee, String instituteId, EmployeeEntity employeeEntity, Optional<String> profilePic) {
+        UserDataDTO userDataDTO = getUserDataDTO(validatedEmployee, instituteId);
+
+        if (validatedEmployee.getBranchId() != null) {
+            BranchEntity branchEntity = branchDAO.findById(validatedEmployee.getBranchId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            employeeEntity.setBranch(branchEntity);
+        }
+
         employeeEntity.setEmail(validatedEmployee.getEmail());
         employeeEntity.setAccountType(validatedEmployee.getAccountType());
         employeeEntity.setFullName(validatedEmployee.getFullName());
@@ -81,10 +85,12 @@ public class EmployeeService {
         employeeEntity.setUsername(validatedEmployee.getUsername());
         employeeEntity.setPhone(validatedEmployee.getPhone());
         employeeEntity.setDateOfBirth(validatedEmployee.getDateOfBirth());
-        if (profilePic.isPresent())
-            employeeEntity.setProfilePic(profilePic.get());
-        return employeeEntity;
+        profilePic.ifPresent(employeeEntity::setProfilePic);
+
+        employeeDAO.save(employeeEntity);
+        authApi.signup(userDataDTO);
     }
+
 
     private Employee fillDTO(EmployeeEntity employeeEntity) {
         Employee employee = new Employee();
