@@ -2,6 +2,8 @@ package gp.backend.controllers;
 
 import gp.backend.dto.Branch;
 import gp.backend.service.BranchService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
@@ -32,6 +34,7 @@ public class BranchesController {
         return branchService.getBranch(id);
     }
 
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT')")
     @PutMapping("/{id}")
     public void updateBranch(@PathVariable String id, @RequestBody Branch branch) {
@@ -43,7 +46,7 @@ public class BranchesController {
         branchService.updateBranch((String) SecurityContextHolder.getContext().getAuthentication().getCredentials(), branch);
     }
 
-
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT')")
     @PostMapping
     public void createBranch(Branch branch) {

@@ -3,6 +3,8 @@ package gp.backend.controllers;
 import gp.backend.dto.Institute;
 import gp.backend.service.InstituteService;
 import gp.backend.service.UploadService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
@@ -37,6 +39,7 @@ public class InstituteController {
         return instituteService.getInstitute(id);
     }
 
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @DeleteMapping("/{id}")
     public void deleteInstitute(@PathVariable String id) {
@@ -45,6 +48,7 @@ public class InstituteController {
         instituteService.deleteInstitute(id);
     }
 
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PostMapping
     public void createInstitute(@RequestPart Institute institute, @RequestPart Optional<MultipartFile> profilePic) {
@@ -52,6 +56,7 @@ public class InstituteController {
         instituteService.createInstitute(institute, uploadUrl);
     }
 
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT')")
     @PutMapping()
     public void updateInstitute(@RequestPart Institute institute, @RequestPart Optional<MultipartFile> profilePic) {

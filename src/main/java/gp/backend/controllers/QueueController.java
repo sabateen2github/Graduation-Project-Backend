@@ -5,6 +5,8 @@ import gp.backend.dto.LatLng;
 import gp.backend.dto.Queue;
 import gp.backend.dto.QueueSpec;
 import gp.backend.service.QueueService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
@@ -36,6 +38,7 @@ public class QueueController {
         return queueService.getArchivedQueues(userId);
     }
 
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT') or hasRole('ROLE_HELP_DESK')")
     @GetMapping("/queue")
     public Queue getQueue(@RequestParam String id, @RequestParam String branchId) {
@@ -44,7 +47,7 @@ public class QueueController {
         return queueService.getQueue((String) SecurityContextHolder.getContext().getAuthentication().getCredentials(), branchId, id);
     }
 
-
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT') or hasRole('ROLE_HELP_DESK')")
     @PutMapping("/queue/reset")
     public void resetQueue(@RequestParam String id, @RequestParam String branchId) {
@@ -53,6 +56,7 @@ public class QueueController {
         queueService.resetQueue((String) SecurityContextHolder.getContext().getAuthentication().getCredentials(), branchId, id);
     }
 
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT') or hasRole('ROLE_HELP_DESK')")
     @PutMapping("/queue/advance")
     public void advanceQueue(@RequestParam String id, @RequestParam String branchId) {
@@ -84,6 +88,7 @@ public class QueueController {
 
     }
 
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT')")
     @PutMapping("/queue")
     public void editQueueSpec(@RequestBody QueueSpec queueSpec) {
@@ -92,6 +97,7 @@ public class QueueController {
         queueService.editQueueSpec((String) SecurityContextHolder.getContext().getAuthentication().getCredentials(), queueSpec);
     }
 
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT')")
     @DeleteMapping("/queue")
     public void deleteQueue(@RequestParam String id, @RequestParam String branchId) {

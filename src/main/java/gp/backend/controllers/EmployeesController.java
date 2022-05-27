@@ -3,6 +3,8 @@ package gp.backend.controllers;
 import gp.backend.dto.Employee;
 import gp.backend.service.EmployeeService;
 import gp.backend.service.UploadService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
@@ -26,12 +28,14 @@ public class EmployeesController {
     private final EmployeeService employeeService;
     private final UploadService uploadService;
 
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT')")
     @GetMapping
     public List<Employee> searchEmployees(@RequestParam String searchTerm) {
         return employeeService.findBySearchTerm((String) SecurityContextHolder.getContext().getAuthentication().getCredentials(), searchTerm);
     }
 
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT') or hasRole('ROLE_HELP_DESK')")
     @GetMapping("/{id}")
     public Employee getEmployee(@PathVariable String id) {
@@ -40,6 +44,7 @@ public class EmployeesController {
         return employeeService.getEmployee((String) SecurityContextHolder.getContext().getAuthentication().getCredentials(), id);
     }
 
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT')")
     @PutMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     public void editEmployee(@RequestPart Employee employee, @RequestPart Optional<MultipartFile> profilePic) {
@@ -48,6 +53,7 @@ public class EmployeesController {
 
     }
 
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT')")
     @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     public void createEmployee(@RequestPart Employee employee, @RequestPart Optional<MultipartFile> profilePic) {
