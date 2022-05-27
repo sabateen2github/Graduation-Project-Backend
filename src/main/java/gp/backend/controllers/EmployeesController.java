@@ -44,6 +44,16 @@ public class EmployeesController {
         return employeeService.getEmployee((String) SecurityContextHolder.getContext().getAuthentication().getCredentials(), id);
     }
 
+
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT') or hasRole('ROLE_HELP_DESK')")
+    @GetMapping("/username")
+    public Employee getEmployeeByUsername(@RequestParam String username) {
+        if (StringUtils.isEmpty(username))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        return employeeService.getEmployeeByUsername((String) SecurityContextHolder.getContext().getAuthentication().getCredentials(), username);
+    }
+
     @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT')")
     @PutMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})

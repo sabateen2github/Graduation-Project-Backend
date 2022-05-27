@@ -9,9 +9,11 @@ import gp.backend.data.entities.BranchEntity;
 import gp.backend.data.entities.EmployeeEntity;
 import gp.backend.data.entities.InstituteEntity;
 import gp.backend.dto.Employee;
+import gp.backend.security.AppUserRole;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -32,6 +34,15 @@ public class EmployeeService {
 
     public Employee getEmployee(String instituteId, String validatedId) {
         EmployeeEntity employeeEntity = employeeDAO.findByInstitute_IdAndId(instituteId, validatedId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        return fillDTO(employeeEntity);
+    }
+
+    public Employee getEmployeeByUsername(String instituteId, String username) {
+        EmployeeEntity employeeEntity = employeeDAO.findByUsername(username).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        boolean isAdmin = ((List<AppUserRole>) SecurityContextHolder.getContext().getAuthentication().getAuthorities()).contains(AppUserRole.ROLE_ADMIN);
+        if (!isAdmin && !instituteId.equals(employeeEntity.getInstitute().getId()))
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         return fillDTO(employeeEntity);
     }
 

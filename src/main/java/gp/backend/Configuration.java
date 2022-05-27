@@ -15,7 +15,7 @@ import javax.annotation.PostConstruct;
 
 @org.springframework.context.annotation.Configuration
 @EnableScheduling
-@OpenAPIDefinition(info = @Info(title = "My API", version = "v1"))
+@OpenAPIDefinition(info = @Info(title = "backend-api", version = "1.0.0"))
 @SecurityScheme(
         name = "bearerAuth",
         type = SecuritySchemeType.HTTP,

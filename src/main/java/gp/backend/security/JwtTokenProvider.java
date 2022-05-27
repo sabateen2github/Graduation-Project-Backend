@@ -16,7 +16,6 @@ import org.springframework.web.server.ResponseStatusException;
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Component
 public class JwtTokenProvider {
@@ -102,14 +101,15 @@ public class JwtTokenProvider {
 
     private List<AppUserRole> getRoles(String token) {
 
-        List<String> roles = Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token).getBody().get("auth", List.class);
-        return roles.stream().map(item -> {
-            try {
-                return AppUserRole.valueOf(item);
-            } catch (Exception e) {
-                return null;
-            }
-        }).filter(Objects::nonNull).collect(Collectors.toList());
+        List roles = Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token).getBody().get("auth", ArrayList.class);
+
+        if (roles == null || roles.size() == 0) {
+            return null;
+        } else {
+            Map role = (Map) roles.get(0);
+            return Collections.singletonList(AppUserRole.valueOf(String.valueOf(role.get("authority"))));
+        }
+
     }
 
     public String resolveToken(HttpServletRequest req) {
