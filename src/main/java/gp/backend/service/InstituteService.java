@@ -63,9 +63,14 @@ public class InstituteService {
         institutesDAO.save(mapToEntity(validatedInstitute));
     }
 
-    public void saveInstitute(Institute validatedInstitute, Optional<String> logoPic) {
+    public void saveInstitute(String instituteId, Institute validatedInstitute, Optional<String> logoPic) {
+
+        InstituteEntity institute = institutesDAO.findById(instituteId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        institute.setEmail(validatedInstitute.getEmail());
+        institute.setName(validatedInstitute.getName());
+        institute.setPhone(validatedInstitute.getPhone());
         validatedInstitute.setLogoUrl(logoPic);
-        institutesDAO.save(mapToEntity(validatedInstitute));
+        institutesDAO.save(institute);
 
     }
 

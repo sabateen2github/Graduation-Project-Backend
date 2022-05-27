@@ -49,8 +49,9 @@ public class QueueService {
         QueueLockKey queueLockKey = QueueLockKey.builder().queueId(id).branchId(branchId).instituteId(instituteId).build();
         executeWithLock(queueLockKey, () -> {
             QueueEntity queueEntity = queueDAO.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            if (!instituteId.equals(queueEntity.getInstitute().getId()))
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
             List<BookedTurnQueueEntity> allQueues = bookedTurnQueueDAO.findAllById_QueueIdAndState(id, BookedTurnQueue.QueueState.ACTIVE);
-
             allQueues.forEach(item -> {
                 item.setState(BookedTurnQueue.QueueState.CANCELLED);
             });
@@ -69,6 +70,9 @@ public class QueueService {
         QueueLockKey queueLockKey = QueueLockKey.builder().queueId(id).branchId(branchId).instituteId(instituteId).build();
         executeWithLock(queueLockKey, () -> {
             QueueEntity queueEntity = queueDAO.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            if (!instituteId.equals(queueEntity.getInstitute().getId()))
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+
             queueEntity.setPhysicalSize(queueEntity.getPhysicalSize() - 1);
             queueEntity.setQueueSize(queueEntity.getQueueSize() - 1);
 
@@ -159,6 +163,8 @@ public class QueueService {
 
     public void editQueueSpec(String instituteId, QueueSpec queueSpec) {
         QueueEntity queueEntity = queueDAO.findById(queueSpec.getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        if (!queueEntity.getInstitute().getId().equals(instituteId))
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         queueEntity.setName(queueSpec.getName());
         queueDAO.save(queueEntity);
     }
@@ -176,6 +182,9 @@ public class QueueService {
 
     public void deleteQueue(String instituteId, String branchId, String id) {
         // TODO: check if related bookedTurnQueueEntities are also deleted
+        QueueEntity queueEntity = queueDAO.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        if (!instituteId.equals(queueEntity.getInstitute().getId()))
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         queueDAO.deleteById(id);
     }
 

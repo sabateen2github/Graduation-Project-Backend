@@ -1,7 +1,9 @@
 package gp.backend.service;
 
 import gp.backend.data.BranchDAO;
+import gp.backend.data.InstitutesDAO;
 import gp.backend.data.entities.BranchEntity;
+import gp.backend.data.entities.InstituteEntity;
 import gp.backend.dto.Branch;
 import gp.backend.dto.LatLng;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class BranchService {
     private final BranchDAO branchDAO;
+    private final InstitutesDAO institutesDAO;
 
     private Branch mapEntityToBranch(BranchEntity item) {
         Branch branch = new Branch();
@@ -31,13 +34,10 @@ public class BranchService {
         return branch;
     }
 
-    private BranchEntity mapEntityFromBranch(Branch item) {
-        BranchEntity branch = new BranchEntity();
-        branch.setId(item.getId());
+    private BranchEntity mapEntityFromBranch(Branch item, BranchEntity branch) {
         branch.setLatitude(item.getLocation().getLat());
         branch.setLongitude(item.getLocation().getLng());
         branch.setName(item.getName());
-        branch.setPhone(item.getPhone());
         branch.setPhone(item.getPhone());
         return branch;
     }
@@ -54,11 +54,26 @@ public class BranchService {
         }
     }
 
-    public void updateBranch(Branch validatedBranch) {
-        branchDAO.save(mapEntityFromBranch(validatedBranch));
+    public void updateBranch(String instituteId, Branch validatedBranch) {
+
+        BranchEntity branchEntity = branchDAO.findById(validatedBranch.getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        if (!branchEntity.getInstitute().getId().equals(instituteId)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        branchDAO.save(mapEntityFromBranch(validatedBranch, branchEntity));
     }
 
-    public void createBranch(Branch validatedBranch) {
-        branchDAO.save(mapEntityFromBranch(validatedBranch));
+    public void createBranch(String instituteId, Branch validatedBranch) {
+
+
+        InstituteEntity instituteEntity = institutesDAO.findById(instituteId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        if (instituteEntity.getId().equals(instituteId)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        BranchEntity branch = new BranchEntity();
+        branch.setInstitute(instituteEntity);
+        branchDAO.save(mapEntityFromBranch(validatedBranch, branch));
     }
 }

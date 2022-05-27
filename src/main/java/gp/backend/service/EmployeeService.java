@@ -7,6 +7,7 @@ import gp.backend.data.entities.BranchEntity;
 import gp.backend.data.entities.EmployeeEntity;
 import gp.backend.dto.Employee;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,7 +18,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +31,12 @@ public class EmployeeService {
 
     @Transactional
     public void createEmployee(Employee validatedEmployee, String instituteId, Optional<String> profilePic) {
+        if (employeeDAO.findByInstitute_IdAndId(instituteId, validatedEmployee.getId()).isPresent()) {
+            handleSave(validatedEmployee, instituteId, profilePic);
+        } else throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+    }
+
+    private void handleSave(Employee validatedEmployee, String instituteId, Optional<String> profilePic) {
         UserDataDTO userDataDTO = new UserDataDTO();
 
         if (validatedEmployee.getAccountType() == Employee.AccountType.MANAGEMENT) {
@@ -52,16 +58,15 @@ public class EmployeeService {
         authApi.signup(userDataDTO);
     }
 
-    public Employee getEmployee(String validatedId) {
-        Optional<EmployeeEntity> employeeEntity = employeeDAO.findById(validatedId);
-        if (!employeeEntity.isPresent())
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-        return fillDTO(employeeEntity.get());
+
+    public Employee getEmployee(String instituteId, String validatedId) {
+        EmployeeEntity employeeEntity = employeeDAO.findByInstitute_IdAndId(instituteId, validatedId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        return fillDTO(employeeEntity);
     }
 
     public void editEmployee(Employee validatedEmployee, String instituteId, Optional<String> profilePic) {
-        if (employeeDAO.findById(validatedEmployee.getId()).isPresent()) {
-            createEmployee(validatedEmployee, instituteId, profilePic);
+        if (employeeDAO.findByInstitute_IdAndId(instituteId, validatedEmployee.getId()).isPresent()) {
+            handleSave(validatedEmployee, instituteId, profilePic);
         } else throw new ResponseStatusException(HttpStatus.NOT_FOUND);
     }
 
@@ -97,11 +102,10 @@ public class EmployeeService {
     }
 
 
-    public List<Employee> getAll() {
-        return StreamSupport.stream(employeeDAO.findAll().spliterator(), false).map(this::fillDTO).collect(Collectors.toList());
-    }
+    public List<Employee> findBySearchTerm(String instituteId, String searchTerm) {
+        if (StringUtils.isEmpty(searchTerm))
+            return employeeDAO.findByInstitute_Id(instituteId).stream().map(this::fillDTO).collect(Collectors.toList());
 
-    public List<Employee> findBySearchTerm(String searchTerm) {
-        return employeeDAO.findByNameOrFullNameOrIdContaining(searchTerm, searchTerm, searchTerm).stream().map(this::fillDTO).collect(Collectors.toList());
+        return employeeDAO.findByInstitute_IdAndNameOrFullNameOrIdContaining(instituteId, searchTerm, searchTerm, searchTerm).stream().map(this::fillDTO).collect(Collectors.toList());
     }
 }

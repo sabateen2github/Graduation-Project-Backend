@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,19 +26,21 @@ public class EmployeesController {
     private final EmployeeService employeeService;
     private final UploadService uploadService;
 
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT')")
     @GetMapping
     public List<Employee> searchEmployees(@RequestParam String searchTerm) {
-        if (StringUtils.isEmpty(searchTerm)) return employeeService.getAll();
-        else return employeeService.findBySearchTerm(searchTerm);
+        return employeeService.findBySearchTerm((String) SecurityContextHolder.getContext().getAuthentication().getCredentials(), searchTerm);
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT') or hasRole('ROLE_HELP_DESK')")
     @GetMapping("/{id}")
     public Employee getEmployee(@PathVariable String id) {
         if (StringUtils.isEmpty(id))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-        return employeeService.getEmployee(id);
+        return employeeService.getEmployee((String) SecurityContextHolder.getContext().getAuthentication().getCredentials(), id);
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT')")
     @PutMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     public void editEmployee(@RequestPart Employee employee, @RequestPart Optional<MultipartFile> profilePic) {
         Optional<String> uploadUrl = handleEmployee(employee, profilePic);
@@ -45,6 +48,7 @@ public class EmployeesController {
 
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT')")
     @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     public void createEmployee(@RequestPart Employee employee, @RequestPart Optional<MultipartFile> profilePic) {
         Optional<String> uploadUrl = handleEmployee(employee, profilePic);

@@ -8,6 +8,7 @@ import gp.backend.service.QueueService;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -35,6 +36,7 @@ public class QueueController {
         return queueService.getArchivedQueues(userId);
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT') or hasRole('ROLE_HELP_DESK')")
     @GetMapping("/queue")
     public Queue getQueue(@RequestParam String id, @RequestParam String branchId) {
         if (StringUtils.isEmpty(id) || StringUtils.isEmpty(branchId))
@@ -43,6 +45,7 @@ public class QueueController {
     }
 
 
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT') or hasRole('ROLE_HELP_DESK')")
     @PutMapping("/queue/reset")
     public void resetQueue(@RequestParam String id, @RequestParam String branchId) {
         if (StringUtils.isEmpty(id) || StringUtils.isEmpty(branchId))
@@ -50,6 +53,7 @@ public class QueueController {
         queueService.resetQueue((String) SecurityContextHolder.getContext().getAuthentication().getCredentials(), branchId, id);
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT') or hasRole('ROLE_HELP_DESK')")
     @PutMapping("/queue/advance")
     public void advanceQueue(@RequestParam String id, @RequestParam String branchId) {
         if (StringUtils.isEmpty(id) || StringUtils.isEmpty(branchId))
@@ -66,10 +70,10 @@ public class QueueController {
     }
 
     @PutMapping("/queue/book/toggle")
-    public void switchUserLocationMode(@RequestParam String userId, @RequestParam String queueId, @RequestParam String branchId) {
+    public void switchUserLocationMode(@RequestParam String instituteId, @RequestParam String userId, @RequestParam String queueId, @RequestParam String branchId) {
         if (StringUtils.isEmpty(userId) || StringUtils.isEmpty(branchId) || StringUtils.isEmpty(queueId))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-        queueService.toggleQueueMode((String) SecurityContextHolder.getContext().getAuthentication().getCredentials(), userId, branchId, queueId);
+        queueService.toggleQueueMode(instituteId, userId, branchId, queueId);
     }
 
     @DeleteMapping("/queue/book")
@@ -80,6 +84,7 @@ public class QueueController {
 
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT')")
     @PutMapping("/queue")
     public void editQueueSpec(@RequestBody QueueSpec queueSpec) {
         if (queueSpec == null || StringUtils.isEmpty(queueSpec.getName()) || StringUtils.isEmpty(queueSpec.getId()) || StringUtils.isEmpty(queueSpec.getBranchId()))
@@ -87,6 +92,7 @@ public class QueueController {
         queueService.editQueueSpec((String) SecurityContextHolder.getContext().getAuthentication().getCredentials(), queueSpec);
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT')")
     @DeleteMapping("/queue")
     public void deleteQueue(@RequestParam String id, @RequestParam String branchId) {
         if (StringUtils.isEmpty(id) || StringUtils.isEmpty(branchId))

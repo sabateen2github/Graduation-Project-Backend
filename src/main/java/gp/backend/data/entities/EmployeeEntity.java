@@ -33,4 +33,9 @@ public class EmployeeEntity {
     private BranchEntity branch;
 
 
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "institute_id")
+    private InstituteEntity institute;
+
+
 }

@@ -6,6 +6,8 @@ import gp.backend.service.UploadService;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
@@ -22,6 +24,7 @@ public class InstituteController {
     private final InstituteService instituteService;
     private final UploadService uploadService;
 
+
     @GetMapping
     public List<Institute> searchInstitutes(@RequestParam Optional<String> searchTerms) {
         return instituteService.searchInstitutes(searchTerms);
@@ -34,6 +37,7 @@ public class InstituteController {
         return instituteService.getInstitute(id);
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @DeleteMapping("/{id}")
     public void deleteInstitute(@PathVariable String id) {
         if (StringUtils.isEmpty(id))
@@ -41,16 +45,18 @@ public class InstituteController {
         instituteService.deleteInstitute(id);
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PostMapping
     public void createInstitute(@RequestPart Institute institute, @RequestPart Optional<MultipartFile> profilePic) {
         Optional<String> uploadUrl = handleInstitute(institute, profilePic);
         instituteService.createInstitute(institute, uploadUrl);
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT')")
     @PutMapping()
     public void updateInstitute(@RequestPart Institute institute, @RequestPart Optional<MultipartFile> profilePic) {
         Optional<String> uploadUrl = handleInstitute(institute, profilePic);
-        instituteService.saveInstitute(institute, uploadUrl);
+        instituteService.saveInstitute((String) SecurityContextHolder.getContext().getAuthentication().getCredentials(), institute, uploadUrl);
 
     }
 
