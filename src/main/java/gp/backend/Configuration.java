@@ -1,6 +1,7 @@
 package gp.backend;
 
 import gp.backend.auth.ApiClient;
+import gp.backend.auth.auth.HttpBearerAuth;
 import gp.backend.security.JwtTokenProvider;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
@@ -29,13 +30,15 @@ public class Configuration {
 
     @PostConstruct
     public void attachJWT() {
-        authApi.addDefaultHeader("Authorization", "Bearer " + jwtTokenProvider.generateAdminToken());
+        HttpBearerAuth bearerAuth = (HttpBearerAuth) authApi.getAuthentication("bearerAuth");
+        bearerAuth.setBearerToken(jwtTokenProvider.generateAdminToken());
     }
 
 
     @Scheduled(fixedRate = 1800000)
     public void scheduleFixedDelayTask() {
-        authApi.addDefaultHeader("Authorization", "Bearer " + jwtTokenProvider.generateAdminToken());
+        HttpBearerAuth bearerAuth = (HttpBearerAuth) authApi.getAuthentication("bearerAuth");
+        bearerAuth.setBearerToken(jwtTokenProvider.generateAdminToken());
     }
 
 }
