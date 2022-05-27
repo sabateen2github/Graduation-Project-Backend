@@ -51,7 +51,8 @@ public class EmployeesController {
     public Employee getEmployeeByUsername(@RequestParam String username) {
         if (StringUtils.isEmpty(username))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-        return employeeService.getEmployeeByUsername((String) SecurityContextHolder.getContext().getAuthentication().getCredentials(), username);
+        Employee employee = employeeService.getEmployeeByUsername((String) SecurityContextHolder.getContext().getAuthentication().getCredentials(), username);
+        return employee;
     }
 
     @Operation(security = @SecurityRequirement(name = "bearerAuth"))

@@ -43,6 +43,7 @@ public class EmployeeService {
         boolean isAdmin = ((List<AppUserRole>) SecurityContextHolder.getContext().getAuthentication().getAuthorities()).contains(AppUserRole.ROLE_ADMIN);
         if (!isAdmin && !instituteId.equals(employeeEntity.getInstitute().getId()))
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+
         return fillDTO(employeeEntity);
     }
 
@@ -111,7 +112,9 @@ public class EmployeeService {
         employee.setFullName(employeeEntity.getFullName());
         employee.setName(employeeEntity.getName());
         employee.setDateOfBirth(employeeEntity.getDateOfBirth());
-        employee.setBranchId(employeeEntity.getBranch().getId());
+        BranchEntity branch = employeeEntity.getBranch();
+        if (branch != null)
+            employee.setBranchId(branch.getId());
         employee.setUsername(employeeEntity.getUsername());
         employee.setId(employeeEntity.getId());
         employee.setProfilePic(Optional.ofNullable(employeeEntity.getProfilePic()));
