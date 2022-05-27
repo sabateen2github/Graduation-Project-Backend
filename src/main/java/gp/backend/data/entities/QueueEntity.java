@@ -16,9 +16,13 @@ public class QueueEntity {
     private String id;
 
     private String name;
-    @ManyToOne
+    @ManyToOne(optional = false)
     @JoinColumn(name = "branch_id")
     private BranchEntity branch;
+
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "institute_id")
+    private InstituteEntity institute;
 
     private int queueSize;
     private int physicalSize;

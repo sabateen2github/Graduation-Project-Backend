@@ -28,7 +28,7 @@ public class EmployeeEntity {
     private String phone;
     private Employee.AccountType accountType;
 
-    @ManyToOne
+    @ManyToOne(optional = false)
     @JoinColumn(name = "branch_id")
     private BranchEntity branch;
 

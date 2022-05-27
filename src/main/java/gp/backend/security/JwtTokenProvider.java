@@ -4,11 +4,14 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
+import org.springframework.web.server.ResponseStatusException;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
@@ -22,7 +25,7 @@ public class JwtTokenProvider {
      * THIS IS NOT A SECURE PRACTICE! For simplicity, we are storing a static key here. Ideally, in a
      * microservices environment, this key would be kept on a config-server.
      */
-    @Value("${security.jwt.token.secret-key:secret-key}")
+    @Value("${security.jwt.token.secret-key}")
     private String secretKey;
 
     @Value("${security.jwt.token.username}")
@@ -41,7 +44,15 @@ public class JwtTokenProvider {
 
 
     public Authentication getAuthentication(String token) {
-        return new UsernamePasswordAuthenticationToken(getUsername(token), getInstituteId(token), getRoles(token));
+
+        String username = getUsername(token);
+        List<AppUserRole> roles = getRoles(token);
+        String instituteId = getInstituteId(token);
+
+        if (StringUtils.isEmpty(username) || StringUtils.isEmpty(instituteId) || roles == null || roles.size() == 0)
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+
+        return new UsernamePasswordAuthenticationToken(username, instituteId, roles);
     }
 
     private String getUsername(String token) {

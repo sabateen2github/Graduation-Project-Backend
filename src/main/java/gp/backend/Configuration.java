@@ -1,14 +1,11 @@
 package gp.backend;
 
 import gp.backend.auth.ApiClient;
+import gp.backend.exception.ResponseErrorHandler;
 import gp.backend.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.web.client.ResponseErrorHandler;
-import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
 
@@ -17,14 +14,8 @@ import javax.annotation.PostConstruct;
 @RequiredArgsConstructor
 public class Configuration {
 
-    private final ResponseErrorHandler responseErrorHandler;
     private final ApiClient authApi;
     private final JwtTokenProvider jwtTokenProvider;
-
-    @Bean
-    public RestTemplate getRestTemplate(RestTemplateBuilder restTemplateBuilder) {
-        return restTemplateBuilder.errorHandler(responseErrorHandler).build();
-    }
 
     @PostConstruct
     public void attachJWT() {

@@ -16,7 +16,7 @@ public class BranchEntity {
 
     private String name;
     private String phone;
-    @ManyToOne
+    @ManyToOne(optional = false)
     @JoinColumn(name = "institute_id")
     private InstituteEntity institute;
     private double latitude;

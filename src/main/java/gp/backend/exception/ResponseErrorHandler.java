@@ -6,7 +6,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
 
+import javax.annotation.PostConstruct;
 import java.io.IOException;
 
 @Component
@@ -14,7 +16,13 @@ import java.io.IOException;
 public class ResponseErrorHandler implements org.springframework.web.client.ResponseErrorHandler {
 
     private final ApiClient authApi;
-    private JwtTokenProvider jwtTokenProvider;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final RestTemplate restTemplate;
+
+    @PostConstruct
+    public void init() {
+        restTemplate.setErrorHandler(this);
+    }
 
     @Override
     public boolean hasError(ClientHttpResponse response) throws IOException {

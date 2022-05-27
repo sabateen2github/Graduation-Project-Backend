@@ -16,13 +16,15 @@ public class BookedTurnQueueEntity {
     private CompositeId id;
 
     @MapsId("queueId")
-    @ManyToOne
+    @ManyToOne(optional = false)
     @JoinColumn
     private QueueEntity queue;
 
-    private int turnId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private String turnId;
     private int position;
     private String logoUrl;
+    private boolean physical;
     private BookedTurnQueue.QueueState state;
 
 

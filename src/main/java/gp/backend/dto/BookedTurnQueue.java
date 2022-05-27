@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 public class BookedTurnQueue {
-    private int turnId;
+    private String turnId;
     private int position;
     private String logoUrl;
     private QueueState state;
