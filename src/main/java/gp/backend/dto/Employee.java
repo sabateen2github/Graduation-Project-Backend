@@ -21,7 +21,7 @@ public class Employee {
     private AccountType accountType;
 
     public enum AccountType {
-        HELP_DESK(0), MANAGEMENT(1), ADMIN(2);
+        ROLE_HELP_DESK(0), ROLE_MANAGEMENT(1), ROLE_ADMIN(2);
         private int intValue;
 
         AccountType(int value) {

@@ -27,7 +27,7 @@ public class Initializer implements CommandLineRunner {
         institute = instituteService.createInstitute(institute, Optional.empty(), true);
 
         Employee employee = new Employee();
-        employee.setAccountType(Employee.AccountType.ADMIN);
+        employee.setAccountType(Employee.AccountType.ROLE_ADMIN);
         employee.setUsername("admin");
         employee.setName("Alaa Sabateen");
         employee.setEmail("adminEmail");

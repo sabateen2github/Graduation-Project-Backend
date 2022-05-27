@@ -74,7 +74,7 @@ public class EmployeesController {
 
 
     private Optional<String> handleEmployee(Employee employee, Optional<MultipartFile> profilePic) {
-        if (!validateEmployee(employee) || employee.getAccountType() == Employee.AccountType.ADMIN || !employee.getPassword().isPresent())
+        if (!validateEmployee(employee) || employee.getAccountType() == Employee.AccountType.ROLE_ADMIN || !employee.getPassword().isPresent())
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         Optional<String> uploadUrl = Optional.empty();
         if (profilePic.isPresent())

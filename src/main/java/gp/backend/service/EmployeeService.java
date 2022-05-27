@@ -52,7 +52,7 @@ public class EmployeeService {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY);
 
         InstituteEntity instituteEntity = institutesDAO.findById(instituteId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        if (validatedEmployee.getAccountType() == Employee.AccountType.ADMIN && !instituteEntity.isAdmin())
+        if (validatedEmployee.getAccountType() == Employee.AccountType.ROLE_ADMIN && !instituteEntity.isAdmin())
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         EmployeeEntity employeeEntity = new EmployeeEntity();
         employeeEntity.setInstitute(instituteEntity);
@@ -61,7 +61,7 @@ public class EmployeeService {
 
     public void editEmployee(Employee validatedEmployee, String instituteId, Optional<String> profilePic) {
         EmployeeEntity employeeEntity = employeeDAO.findByInstitute_IdAndId(instituteId, validatedEmployee.getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        if (validatedEmployee.getAccountType() == Employee.AccountType.ADMIN && !employeeEntity.getInstitute().isAdmin())
+        if (validatedEmployee.getAccountType() == Employee.AccountType.ROLE_ADMIN && !employeeEntity.getInstitute().isAdmin())
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         saveEmployee(validatedEmployee, instituteId, employeeEntity, profilePic);
     }
@@ -69,11 +69,11 @@ public class EmployeeService {
 
     private UserDataDTO getUserDataDTO(Employee validatedEmployee, String instituteId) {
         UserDataDTO userDataDTO = new UserDataDTO();
-        if (validatedEmployee.getAccountType() == Employee.AccountType.MANAGEMENT) {
+        if (validatedEmployee.getAccountType() == Employee.AccountType.ROLE_MANAGEMENT) {
             userDataDTO.setAppUserRoles(Arrays.asList(UserDataDTO.AppUserRolesEnum.MANAGEMENT));
-        } else if (validatedEmployee.getAccountType() == Employee.AccountType.HELP_DESK)
+        } else if (validatedEmployee.getAccountType() == Employee.AccountType.ROLE_HELP_DESK)
             userDataDTO.setAppUserRoles(Arrays.asList(UserDataDTO.AppUserRolesEnum.HELP_DESK));
-        else if (validatedEmployee.getAccountType() == Employee.AccountType.ADMIN)
+        else if (validatedEmployee.getAccountType() == Employee.AccountType.ROLE_ADMIN)
             userDataDTO.setAppUserRoles(Arrays.asList(UserDataDTO.AppUserRolesEnum.ADMIN));
         else throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED);
         userDataDTO.setUsername(validatedEmployee.getUsername());
