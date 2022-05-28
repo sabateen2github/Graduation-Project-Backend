@@ -1,6 +1,7 @@
 package gp.backend.data.entities;
 
 import gp.backend.dto.BookedTurnQueue;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -20,8 +21,8 @@ public class BookedTurnQueueEntity {
     @JoinColumn
     private QueueEntity queue;
 
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private String turnId;
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long turnId;
     private int position;
     private String logoUrl;
     private boolean physical;
@@ -29,12 +30,11 @@ public class BookedTurnQueueEntity {
 
 
     @Embeddable
-    @Getter
-    @Setter
+    @Data
     public static class CompositeId implements Serializable {
         private static final long serialVersionUID = 6854757354118584992L;
         private String uuid;
-        private String queueId;
+        private Long queueId;
 
     }
 

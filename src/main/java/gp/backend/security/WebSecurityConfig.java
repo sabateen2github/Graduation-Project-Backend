@@ -42,8 +42,12 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers(HttpMethod.GET, "/branches").permitAll()
                 .antMatchers(HttpMethod.GET, "/branches/{id}").permitAll()
                 .antMatchers(HttpMethod.GET, "/queues/queues/all").permitAll()
-                .antMatchers(HttpMethod.GET, "/queues/queues/all").permitAll()
-                .antMatchers("/h2-console/**/**").permitAll()
+                .antMatchers(HttpMethod.GET, "/queues/active/{userId}").permitAll()
+                .antMatchers(HttpMethod.GET, "/queues/archived/{userId}").permitAll()
+                .antMatchers("/queues/queue/book").permitAll()
+                .antMatchers("/queues/queue/book/toggle").permitAll()
+                .antMatchers(HttpMethod.GET, "/queues/spec/all").permitAll()
+
                 // Disallow everything else..
                 .anyRequest().authenticated();
 

@@ -18,12 +18,12 @@ public interface BookedTurnQueueDAO extends JpaRepository<BookedTurnQueueEntity,
     public Optional<BookedTurnQueueEntity> findByIdAndState(BookedTurnQueueEntity.CompositeId compositeId, BookedTurnQueue.QueueState queueState);
 
 
-    public List<BookedTurnQueueEntity> findAllById_QueueIdAndState(String queueId, BookedTurnQueue.QueueState queueState);
+    public List<BookedTurnQueueEntity> findAllById_QueueIdAndState(Long queueId, BookedTurnQueue.QueueState queueState);
 
-    public Optional<BookedTurnQueueEntity> findById_QueueIdAndTurnId(String queueId, String turnId);
+    public Optional<BookedTurnQueueEntity> findById_QueueIdAndTurnId(Long queueId, Long turnId);
 
-    public Optional<BookedTurnQueueEntity> findById_QueueIdAndPosition(String queueId, int position);
-    public List<BookedTurnQueueEntity> findAllById_QueueIdAndPositionGreaterThan(String queueId, int position);
+    public Optional<BookedTurnQueueEntity> findById_QueueIdAndPosition(Long queueId, int position);
+    public List<BookedTurnQueueEntity> findAllById_QueueIdAndPositionGreaterThan(Long queueId, int position);
 
 
 }

@@ -13,7 +13,7 @@ public class BranchEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(nullable = false)
-    private String id;
+    private Long id;
 
     private String name;
     private String phone;

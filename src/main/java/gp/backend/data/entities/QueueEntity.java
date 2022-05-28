@@ -12,9 +12,8 @@ import java.util.Date;
 public class QueueEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(nullable = false)
-    private String id;
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
 
     private String name;
     @ManyToOne(optional = false)
@@ -29,7 +28,7 @@ public class QueueEntity {
     private int physicalSize;
     private int remoteSize;
     private int averageTime;
-    private String currentTurnId;
+    private Long currentTurnId;
 
     private Date start;
     private int count;

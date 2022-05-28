@@ -5,5 +5,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface BranchDAO extends JpaRepository<BranchEntity, String> {
+public interface BranchDAO extends JpaRepository<BranchEntity, Long> {
 }

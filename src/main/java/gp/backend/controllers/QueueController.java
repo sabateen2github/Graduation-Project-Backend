@@ -1,5 +1,7 @@
 package gp.backend.controllers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import gp.backend.dto.BookedTurnQueue;
 import gp.backend.dto.LatLng;
 import gp.backend.dto.Queue;
@@ -26,6 +28,7 @@ public class QueueController {
 
     @GetMapping("/active/{userId}")
     public List<BookedTurnQueue> getActiveQueues(@PathVariable String userId) {
+        System.out.println(userId);
         if (StringUtils.isEmpty(userId))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         return queueService.getActiveQueues(userId);
@@ -67,10 +70,10 @@ public class QueueController {
 
 
     @PutMapping("/queue/book")
-    public void bookQueue(@RequestParam String userId, @RequestParam String queueId, @RequestParam String branchId, @RequestParam LatLng location) {
+    public void bookQueue(@RequestParam String userId, @RequestParam String queueId, @RequestParam String branchId, @RequestParam String location) throws JsonProcessingException {
         if (StringUtils.isEmpty(userId) || StringUtils.isEmpty(branchId) || StringUtils.isEmpty(queueId) || location == null)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-        queueService.bookQueue(userId, branchId, queueId, location);
+        queueService.bookQueue(userId, branchId, queueId, new ObjectMapper().readValue(location, LatLng.class));
     }
 
     @PutMapping("/queue/book/toggle")

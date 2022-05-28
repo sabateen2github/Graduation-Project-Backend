@@ -23,20 +23,28 @@ public class InstituteService {
 
     public List<Institute> searchInstitutes(Optional<String> searchTerm) {
 
-        return searchTerm.map(s -> institutesDAO.findByNameContainingIgnoreCaseOrIdContainingIgnoreCase(s, s).stream().map(this::mapFromEntity).collect(Collectors.toList())).orElseGet(() -> institutesDAO.findAll().stream().map(this::mapFromEntity).collect(Collectors.toList()));
+        Long id = -1L;
+        try {
+            id = Long.valueOf(searchTerm.get());
+        } catch (Exception e) {
+            id = -1L;
+        }
+
+        Long finalId = id;
+        return searchTerm.map(s -> institutesDAO.findByNameContainingIgnoreCaseOrId(s, finalId).stream().map(this::mapFromEntity).collect(Collectors.toList())).orElseGet(() -> institutesDAO.findAll().stream().map(this::mapFromEntity).collect(Collectors.toList()));
     }
 
 
     public Institute getInstitute(String validatedId) {
         try {
-            return institutesDAO.findById(validatedId).map(this::mapFromEntity).get();
+            return institutesDAO.findById(Long.valueOf(validatedId)).map(this::mapFromEntity).get();
         } catch (NullPointerException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
     }
 
     public void deleteInstitute(String validatedId) {
-        institutesDAO.deleteById(validatedId);
+        institutesDAO.deleteById(Long.valueOf(validatedId));
     }
 
     public Institute createInstitute(Institute validatedInstitute, Optional<String> logoPic, boolean admin) {
@@ -45,7 +53,12 @@ public class InstituteService {
     }
 
     public void saveInstitute(String instituteId, Institute validatedInstitute, Optional<String> logoPic) {
-        InstituteEntity institute = institutesDAO.findById(instituteId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        InstituteEntity institute = institutesDAO.findById(Long.valueOf(validatedInstitute.getId())).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        InstituteEntity callerInstitute = institutesDAO.findById(Long.valueOf(instituteId)).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        if (!callerInstitute.isAdmin() && !institute.getId().equals(callerInstitute.getId()))
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+
         institute.setEmail(validatedInstitute.getEmail());
         institute.setName(validatedInstitute.getName());
         institute.setPhone(validatedInstitute.getPhone());
@@ -56,7 +69,7 @@ public class InstituteService {
 
     private Institute mapFromEntity(InstituteEntity item) {
         Institute institute = new Institute();
-        institute.setId(item.getId());
+        institute.setId(String.valueOf(item.getId()));
         institute.setEmail(item.getEmail());
         institute.setName(item.getName());
         institute.setPhone(item.getPhone());

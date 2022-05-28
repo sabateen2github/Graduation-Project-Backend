@@ -8,13 +8,13 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface EmployeeDAO extends JpaRepository<EmployeeEntity, String> {
+public interface EmployeeDAO extends JpaRepository<EmployeeEntity, Long> {
 
-    public List<EmployeeEntity> findByInstitute_IdContainingIgnoreCaseAndNameContainingIgnoreCaseOrFullNameContainingIgnoreCaseOrIdContainingIgnoreCase(String instituteId, String searchTermName, String searchTermFull, String searchTermId);
+    public List<EmployeeEntity> findByInstitute_NameContainingIgnoreCaseAndNameContainingIgnoreCaseOrFullNameContainingIgnoreCaseOrId(String instituteName, String searchTermName, String searchTermFull, Long searchTermId);
 
-    public List<EmployeeEntity> findByInstitute_Id(String instituteId);
+    public List<EmployeeEntity> findByInstitute_Id(Long instituteId);
 
-    public Optional<EmployeeEntity> findByInstitute_IdAndId(String instituteId, String id);
+    public Optional<EmployeeEntity> findById(String id);
 
     public Optional<EmployeeEntity> findByUsername(String username);
 

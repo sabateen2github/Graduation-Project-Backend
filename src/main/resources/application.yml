@@ -1,8 +1,4 @@
 spring:
-  h2:
-    console:
-      path: /h2-console
-      enabled: true
   servlet:
     multipart:
       max-request-size: 10MB
@@ -11,8 +7,7 @@ spring:
     pathmatch:
       matching-strategy: ant_path_matcher
   datasource:
-    url: jdbc:h2:file:./data/demo
-    # url: jdbc:mysql://localhost:3306/user_db
+    url: jdbc:mysql://localhost:3306/backend_db
     username: root
     password: root
   tomcat:
@@ -22,11 +17,10 @@ spring:
     min-idle: 15
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.H2Dialect
-        # dialect: org.hibernate.dialect.MySQL8Dialect
+        dialect: org.hibernate.dialect.MySQL8Dialect
         format_sql: true
         id:
           new_generator_mappings: false

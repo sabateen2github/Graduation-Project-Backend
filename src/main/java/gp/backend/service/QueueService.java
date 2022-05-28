@@ -48,7 +48,7 @@ public class QueueService {
     }
 
     public Queue getQueue(String instituteId, String branchId, String id) {
-        QueueEntity queueEntity = queueDAO.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        QueueEntity queueEntity = queueDAO.findById(Long.valueOf(id)).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         return mapToQueue(queueEntity);
     }
 
@@ -56,13 +56,13 @@ public class QueueService {
     @Transactional
     public void resetQueue(String instituteId, String branchId, String id) {
         QueueLockKey queueLockKey = QueueLockKey.builder().queueId(id).branchId(branchId).instituteId(instituteId).build();
-        InstituteEntity instituteEntity = institutesDAO.findById(instituteId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        InstituteEntity instituteEntity = institutesDAO.findById(Long.valueOf(instituteId)).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
         executeWithLock(queueLockKey, () -> {
-            QueueEntity queueEntity = queueDAO.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            QueueEntity queueEntity = queueDAO.findById(Long.valueOf(id)).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
             if (!instituteId.equals(queueEntity.getInstitute().getId()) && !instituteEntity.isAdmin())
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
-            List<BookedTurnQueueEntity> allQueues = bookedTurnQueueDAO.findAllById_QueueIdAndState(id, BookedTurnQueue.QueueState.ACTIVE);
+            List<BookedTurnQueueEntity> allQueues = bookedTurnQueueDAO.findAllById_QueueIdAndState(Long.valueOf(id), BookedTurnQueue.QueueState.ACTIVE);
             allQueues.forEach(item -> {
                 item.setState(BookedTurnQueue.QueueState.CANCELLED);
             });
@@ -79,9 +79,9 @@ public class QueueService {
     @Transactional
     public void advanceQueue(String instituteId, String branchId, String id) {
         QueueLockKey queueLockKey = QueueLockKey.builder().queueId(id).branchId(branchId).instituteId(instituteId).build();
-        InstituteEntity instituteEntity = institutesDAO.findById(instituteId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        InstituteEntity instituteEntity = institutesDAO.findById(Long.valueOf(instituteId)).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         executeWithLock(queueLockKey, () -> {
-            QueueEntity queueEntity = queueDAO.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            QueueEntity queueEntity = queueDAO.findById(Long.valueOf(id)).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
             if (!instituteId.equals(queueEntity.getInstitute().getId()) && !instituteEntity.isAdmin())
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
 
@@ -90,10 +90,10 @@ public class QueueService {
 
             updateAverageTime(queueEntity);
 
-            BookedTurnQueueEntity bookedEntity = bookedTurnQueueDAO.findById_QueueIdAndTurnId(id, queueEntity.getCurrentTurnId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            BookedTurnQueueEntity bookedEntity = bookedTurnQueueDAO.findById_QueueIdAndTurnId(Long.valueOf(id), queueEntity.getCurrentTurnId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
             bookedEntity.setState(BookedTurnQueue.QueueState.COMPLETED);
 
-            List<BookedTurnQueueEntity> nextTurns = bookedTurnQueueDAO.findAllById_QueueIdAndPositionGreaterThan(id, bookedEntity.getPosition());
+            List<BookedTurnQueueEntity> nextTurns = bookedTurnQueueDAO.findAllById_QueueIdAndPositionGreaterThan(Long.valueOf(id), bookedEntity.getPosition());
             Optional<BookedTurnQueueEntity> next = nextTurns.stream().peek(turn -> turn.setPosition(turn.getPosition() - 1)).min(Comparator.comparingInt(BookedTurnQueueEntity::getPosition));
             if (next.isPresent()) {
                 queueEntity.setCurrentTurnId(next.get().getTurnId());
@@ -122,10 +122,17 @@ public class QueueService {
 
     @Transactional
     public void bookQueue(String userId, String branchId, String queueId, LatLng location) {
-        BranchEntity branch = branchDAO.findById(branchId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        QueueLockKey queueLockKey = QueueLockKey.builder().queueId(queueId).branchId(branchId).instituteId(branch.getInstitute().getId()).build();
+        BookedTurnQueueEntity.CompositeId compositeId = new BookedTurnQueueEntity.CompositeId();
+        compositeId.setQueueId(Long.valueOf(queueId));
+        compositeId.setUuid(userId);
+        Optional<BookedTurnQueueEntity> bookedTurnQueueEntity = bookedTurnQueueDAO.findById(compositeId);
+        if (bookedTurnQueueEntity.isPresent() && bookedTurnQueueEntity.get().getState() == BookedTurnQueue.QueueState.ACTIVE)
+            return;
+
+        BranchEntity branch = branchDAO.findById(Long.valueOf(branchId)).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        QueueLockKey queueLockKey = QueueLockKey.builder().queueId(queueId).branchId(branchId).instituteId(String.valueOf(branch.getInstitute().getId())).build();
         executeWithLock(queueLockKey, () -> {
-            QueueEntity queueEntity = queueDAO.findById(queueId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            QueueEntity queueEntity = queueDAO.findById(Long.valueOf(queueId)).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
             try {
 
                 LatLng latLng = new LatLng();
@@ -134,22 +141,25 @@ public class QueueService {
 
                 long duration = distanceService.getDurationInSeconds(location, latLng);
                 long allowedDuration = (long) queueEntity.getPhysicalSize() * queueEntity.getAverageTime() * 60;
-                if (duration * 0.9f > allowedDuration)
-                    throw new ResponseStatusException(HttpStatus.UNAVAILABLE_FOR_LEGAL_REASONS);
+                //if (duration * 0.9f > allowedDuration)
+                //   throw new ResponseStatusException(HttpStatus.UNAVAILABLE_FOR_LEGAL_REASONS);
 
                 queueEntity.setRemoteSize(queueEntity.getRemoteSize() + 1);
                 queueEntity.setQueueSize(queueEntity.getQueueSize() + 1);
                 BookedTurnQueueEntity bookedTurnQueue = new BookedTurnQueueEntity();
                 bookedTurnQueue.setQueue(queueEntity);
-                BookedTurnQueueEntity.CompositeId compositeId = new BookedTurnQueueEntity.CompositeId();
-                compositeId.setQueueId(queueId);
-                compositeId.setUuid(userId);
                 bookedTurnQueue.setId(compositeId);
                 bookedTurnQueue.setLogoUrl(queueEntity.getInstitute().getLogoUrl());
                 bookedTurnQueue.setPosition(queueEntity.getQueueSize());
                 bookedTurnQueue.setState(BookedTurnQueue.QueueState.ACTIVE);
+                bookedTurnQueue.setTurnId((long) (bookedTurnQueue.getId().hashCode() + bookedTurnQueue.getPosition()));
 
-                bookedTurnQueueDAO.save(bookedTurnQueue);
+                bookedTurnQueue = bookedTurnQueueDAO.save(bookedTurnQueue);
+
+                if (queueEntity.getCurrentTurnId() == null) {
+                    queueEntity.setCurrentTurnId(bookedTurnQueue.getTurnId());
+                }
+
                 queueDAO.save(queueEntity);
             } catch (DurationServiceException e) {
                 throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -159,23 +169,23 @@ public class QueueService {
 
     @Transactional
     public void cancelTurn(String userId, String branchId, String queueId) {
-        BranchEntity branch = branchDAO.findById(branchId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        QueueLockKey queueLockKey = QueueLockKey.builder().queueId(queueId).branchId(branchId).instituteId(branch.getInstitute().getId()).build();
+        BranchEntity branch = branchDAO.findById(Long.valueOf(branchId)).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        QueueLockKey queueLockKey = QueueLockKey.builder().queueId(queueId).branchId(branchId).instituteId(String.valueOf(branch.getInstitute().getId())).build();
         executeWithLock(queueLockKey, () -> {
 
             BookedTurnQueueEntity.CompositeId compositeId = new BookedTurnQueueEntity.CompositeId();
             compositeId.setUuid(userId);
-            compositeId.setQueueId(queueId);
+            compositeId.setQueueId(Long.valueOf(queueId));
 
             BookedTurnQueueEntity bookedTurnQueue = bookedTurnQueueDAO.findByIdAndState(compositeId, BookedTurnQueue.QueueState.ACTIVE).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-            QueueEntity queueEntity = queueDAO.findById(queueId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            QueueEntity queueEntity = queueDAO.findById(Long.valueOf(queueId)).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
             if (bookedTurnQueue.isPhysical())
                 queueEntity.setPhysicalSize(queueEntity.getRemoteSize() - 1);
             else queueEntity.setRemoteSize(queueEntity.getRemoteSize() - 1);
             queueEntity.setQueueSize(queueEntity.getQueueSize() - 1);
 
-            List<BookedTurnQueueEntity> nextTurns = bookedTurnQueueDAO.findAllById_QueueIdAndPositionGreaterThan(queueId, bookedTurnQueue.getPosition());
+            List<BookedTurnQueueEntity> nextTurns = bookedTurnQueueDAO.findAllById_QueueIdAndPositionGreaterThan(Long.valueOf(queueId), bookedTurnQueue.getPosition());
             Optional<BookedTurnQueueEntity> next = nextTurns.stream().peek(turn -> turn.setPosition(turn.getPosition() - 1)).min(Comparator.comparingInt(BookedTurnQueueEntity::getPosition));
 
             if (bookedTurnQueue.getTurnId().equals(queueEntity.getCurrentTurnId())) {
@@ -193,8 +203,8 @@ public class QueueService {
     }
 
     public void editQueueSpec(String instituteId, QueueSpec queueSpec) {
-        QueueEntity queueEntity = queueDAO.findById(queueSpec.getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        InstituteEntity instituteEntity = institutesDAO.findById(instituteId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        QueueEntity queueEntity = queueDAO.findById(Long.valueOf(queueSpec.getId())).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        InstituteEntity instituteEntity = institutesDAO.findById(Long.valueOf(instituteId)).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         if (!queueEntity.getInstitute().getId().equals(instituteId) && !instituteEntity.isAdmin())
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         queueEntity.setName(queueSpec.getName());
@@ -204,8 +214,8 @@ public class QueueService {
 
     public void createQueueSpec(String instituteId, QueueSpec queueSpec) {
 
-        InstituteEntity instituteEntity = institutesDAO.findById(instituteId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        BranchEntity branchEntity = branchDAO.findById(queueSpec.getBranchId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        InstituteEntity instituteEntity = institutesDAO.findById(Long.valueOf(instituteId)).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        BranchEntity branchEntity = branchDAO.findById(Long.valueOf(queueSpec.getBranchId())).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
         if (!branchEntity.getInstitute().getId().equals(instituteId) && !instituteEntity.isAdmin())
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
@@ -223,7 +233,7 @@ public class QueueService {
 
         BookedTurnQueueEntity.CompositeId compositeId = new BookedTurnQueueEntity.CompositeId();
         compositeId.setUuid(userId);
-        compositeId.setQueueId(queueId);
+        compositeId.setQueueId(Long.valueOf(queueId));
         BookedTurnQueueEntity turn = bookedTurnQueueDAO.findByIdAndState(compositeId, BookedTurnQueue.QueueState.ACTIVE).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         turn.setPhysical(!turn.isPhysical());
         bookedTurnQueueDAO.save(turn);
@@ -232,21 +242,21 @@ public class QueueService {
 
     public void deleteQueue(String instituteId, String branchId, String id) {
 
-        QueueEntity queueEntity = queueDAO.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        InstituteEntity instituteEntity = institutesDAO.findById(instituteId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        QueueEntity queueEntity = queueDAO.findById(Long.valueOf(id)).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        InstituteEntity instituteEntity = institutesDAO.findById(Long.valueOf(instituteId)).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
         if (!instituteEntity.getId().equals(queueEntity.getInstitute().getId()) && !instituteEntity.isAdmin())
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
 
-        queueDAO.deleteById(id);
+        queueDAO.deleteById(Long.valueOf(id));
     }
 
     public List<QueueSpec> getAllQueueSpecs(String instituteId, String branchId) {
-        return queueDAO.findAllByInstitute_IdAndBranch_Id(instituteId, branchId).stream().map(this::mapToQueueSpec).collect(Collectors.toList());
+        return queueDAO.findAllByBranch_Id(Long.valueOf(branchId)).stream().map(this::mapToQueueSpec).collect(Collectors.toList());
     }
 
     public List<Queue> getAllQueues(String instituteId, String branchId) {
-        return queueDAO.findAllByInstitute_IdAndBranch_Id(instituteId, branchId).stream().map(this::mapToQueue).collect(Collectors.toList());
+        return queueDAO.findAllByBranch_Id(Long.valueOf(branchId)).stream().map(this::mapToQueue).collect(Collectors.toList());
     }
 
     private Queue mapToQueue(QueueEntity queueEntity) {
@@ -254,7 +264,7 @@ public class QueueService {
         queue.setQueueSize(queueEntity.getQueueSize());
         queue.setPhysicalSize(queueEntity.getPhysicalSize());
         queue.setRemoteSize(queueEntity.getRemoteSize());
-        queue.setCurrentTurnId(queueEntity.getCurrentTurnId());
+        queue.setCurrentTurnId(String.valueOf(queueEntity.getCurrentTurnId()));
         queue.setAverageTime(queueEntity.getAverageTime());
         queue.setQueueSpec(mapToQueueSpec(queueEntity));
         return queue;
@@ -262,8 +272,8 @@ public class QueueService {
 
     private QueueSpec mapToQueueSpec(QueueEntity queueEntity) {
         QueueSpec queueSpec = new QueueSpec();
-        queueSpec.setBranchId(queueEntity.getBranch().getId());
-        queueSpec.setId(queueEntity.getId());
+        queueSpec.setBranchId(String.valueOf(queueEntity.getBranch().getId()));
+        queueSpec.setId(String.valueOf(queueEntity.getId()));
         queueSpec.setName(queueEntity.getName());
         return queueSpec;
     }
@@ -282,7 +292,7 @@ public class QueueService {
     private BookedTurnQueue mapToBookedQueue(BookedTurnQueueEntity item) {
         BookedTurnQueue bookedTurnQueue = new BookedTurnQueue();
         bookedTurnQueue.setQueue(mapToQueue(item.getQueue()));
-        bookedTurnQueue.setTurnId(item.getTurnId());
+        bookedTurnQueue.setTurnId(String.valueOf(item.getTurnId()));
         bookedTurnQueue.setLogoUrl(item.getLogoUrl());
         bookedTurnQueue.setPosition(item.getPosition());
         bookedTurnQueue.setState(item.getState());

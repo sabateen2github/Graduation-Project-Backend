@@ -33,7 +33,7 @@ public class EmployeeService {
 
 
     public Employee getEmployee(String instituteId, String validatedId) {
-        EmployeeEntity employeeEntity = employeeDAO.findByInstitute_IdAndId(instituteId, validatedId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        EmployeeEntity employeeEntity = employeeDAO.findById(validatedId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         return fillDTO(employeeEntity);
     }
 
@@ -51,7 +51,7 @@ public class EmployeeService {
         if (employeeDAO.findByUsername(validatedEmployee.getUsername()).isPresent())
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY);
 
-        InstituteEntity instituteEntity = institutesDAO.findById(instituteId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        InstituteEntity instituteEntity = institutesDAO.findById(Long.valueOf(instituteId)).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         if (validatedEmployee.getAccountType() == Employee.AccountType.ROLE_ADMIN && !instituteEntity.isAdmin())
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
 
@@ -59,7 +59,7 @@ public class EmployeeService {
         employeeEntity.setInstitute(instituteEntity);
 
         if (validatedEmployee.getBranchId() != null) {
-            BranchEntity branchEntity = branchDAO.findById(validatedEmployee.getBranchId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            BranchEntity branchEntity = branchDAO.findById(Long.valueOf(validatedEmployee.getBranchId())).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
             employeeEntity.setBranch(branchEntity);
         }
 
@@ -90,14 +90,14 @@ public class EmployeeService {
     }
 
     public void editEmployee(Employee validatedEmployee, String instituteId, Optional<String> profilePic) {
-        EmployeeEntity employeeEntity = employeeDAO.findByInstitute_IdAndId(instituteId, validatedEmployee.getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        EmployeeEntity employeeEntity = employeeDAO.findById(validatedEmployee.getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         if (validatedEmployee.getAccountType() == Employee.AccountType.ROLE_ADMIN && !employeeEntity.getInstitute().isAdmin())
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
 
         String oldUsername = employeeEntity.getUsername();
 
         if (validatedEmployee.getBranchId() != null) {
-            BranchEntity branchEntity = branchDAO.findById(validatedEmployee.getBranchId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            BranchEntity branchEntity = branchDAO.findById(Long.valueOf(validatedEmployee.getBranchId())).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
             employeeEntity.setBranch(branchEntity);
         }
 
@@ -137,9 +137,10 @@ public class EmployeeService {
         employee.setName(employeeEntity.getName());
         employee.setDateOfBirth(employeeEntity.getDateOfBirth());
         BranchEntity branch = employeeEntity.getBranch();
-        if (branch != null) employee.setBranchId(branch.getId());
+        if (branch != null)
+            employee.setBranchId(String.valueOf(branch.getId()));
         employee.setUsername(employeeEntity.getUsername());
-        employee.setId(employeeEntity.getId());
+        employee.setId(String.valueOf(employeeEntity.getId()));
         employee.setProfilePic(Optional.ofNullable(employeeEntity.getProfilePic()));
         return employee;
     }
@@ -147,8 +148,15 @@ public class EmployeeService {
 
     public List<Employee> findBySearchTerm(String instituteId, String searchTerm) {
         if (StringUtils.isEmpty(searchTerm))
-            return employeeDAO.findByInstitute_Id(instituteId).stream().map(this::fillDTO).collect(Collectors.toList());
+            return employeeDAO.findByInstitute_Id(Long.valueOf(instituteId)).stream().map(this::fillDTO).collect(Collectors.toList());
 
-        return employeeDAO.findByInstitute_IdContainingIgnoreCaseAndNameContainingIgnoreCaseOrFullNameContainingIgnoreCaseOrIdContainingIgnoreCase(instituteId, searchTerm, searchTerm, searchTerm).stream().map(this::fillDTO).collect(Collectors.toList());
+        Long id = -1L;
+        try {
+            id = Long.valueOf(searchTerm);
+        } catch (Exception e) {
+            id = -1L;
+        }
+
+        return employeeDAO.findByInstitute_NameContainingIgnoreCaseAndNameContainingIgnoreCaseOrFullNameContainingIgnoreCaseOrId(searchTerm, searchTerm, searchTerm, id).stream().map(this::fillDTO).collect(Collectors.toList());
     }
 }

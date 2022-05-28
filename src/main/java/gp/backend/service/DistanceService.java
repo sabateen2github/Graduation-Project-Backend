@@ -23,7 +23,9 @@ public class DistanceService {
         GeoApiContext context = new GeoApiContext.Builder().apiKey(apiKey).build();
         try {
             DistanceMatrix distanceMatrix = DistanceMatrixApi.newRequest(context).origins(new com.google.maps.model.LatLng(origin.getLat(), origin.getLng())).destinations(new com.google.maps.model.LatLng(destination.getLat(), destination.getLng())).mode(TravelMode.DRIVING).await();
-            long duration = distanceMatrix.rows[0].elements[0].durationInTraffic.inSeconds;
+
+
+            long duration = distanceMatrix == null ? 50 : distanceMatrix.rows[0].elements[0].duration.inSeconds;
             return duration;
         } catch (ApiException | InterruptedException | IOException e) {
             e.printStackTrace();

@@ -7,8 +7,8 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface QueueDAO extends JpaRepository<QueueEntity, String> {
+public interface QueueDAO extends JpaRepository<QueueEntity, Long> {
 
-    public List<QueueEntity> findAllByInstitute_IdAndBranch_Id(String instituteId, String branchId);
+    public List<QueueEntity> findAllByBranch_Id(Long branchId);
 
 }

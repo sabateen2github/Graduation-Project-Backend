@@ -65,7 +65,6 @@ public class EmployeesController {
             employee.setPassword(Optional.empty());
         Optional<String> uploadUrl = handleEmployee(employee, profilePic);
         employeeService.editEmployee(employee, (String) SecurityContextHolder.getContext().getAuthentication().getCredentials(), uploadUrl);
-
     }
 
     @Operation(security = @SecurityRequirement(name = "bearerAuth"))
