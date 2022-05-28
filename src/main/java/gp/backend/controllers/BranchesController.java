@@ -41,20 +41,32 @@ public class BranchesController {
 
         if (Stream.of(id, branch.getName(), branch.getId(), branch.getPhone(), branch.getInstituteId()).anyMatch(StringUtils::isEmpty))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-        if (branch.getLocation() == null || id.equals(branch.getId()))
+        if (branch.getLocation() == null || !id.equals(branch.getId()))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         branchService.updateBranch((String) SecurityContextHolder.getContext().getAuthentication().getCredentials(), branch);
     }
 
     @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT')")
+    @DeleteMapping("/{id}")
+    public void deleteBranch(@PathVariable String id) {
+
+        if (StringUtils.isEmpty(id))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+
+        branchService.deleteBranch((String) SecurityContextHolder.getContext().getAuthentication().getCredentials(), id);
+    }
+
+
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT')")
     @PostMapping
-    public void createBranch(Branch branch) {
-        if (Stream.of(branch.getName(), branch.getId(), branch.getPhone(), branch.getInstituteId()).anyMatch(StringUtils::isEmpty))
+    public Branch createBranch(@RequestBody Branch branch) {
+        if (Stream.of(branch.getName(), branch.getPhone(), branch.getInstituteId()).anyMatch(StringUtils::isEmpty))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         if (branch.getLocation() == null)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-        branchService.createBranch((String) SecurityContextHolder.getContext().getAuthentication().getCredentials(), branch);
+        return branchService.createBranch((String) SecurityContextHolder.getContext().getAuthentication().getCredentials(), branch);
     }
 
 

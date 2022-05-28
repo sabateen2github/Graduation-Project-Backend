@@ -4,6 +4,8 @@ import gp.backend.dto.Employee;
 import gp.backend.service.EmployeeService;
 import gp.backend.service.UploadService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -58,7 +60,9 @@ public class EmployeesController {
     @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT')")
     @PutMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
-    public void editEmployee(@RequestPart Employee employee, @RequestPart Optional<MultipartFile> profilePic) {
+    public void editEmployee(@RequestPart @Parameter(schema = @Schema(type = "string", format = "binary")) Employee employee, @RequestPart Optional<MultipartFile> profilePic) {
+        if (employee.getPassword() == null)
+            employee.setPassword(Optional.empty());
         Optional<String> uploadUrl = handleEmployee(employee, profilePic);
         employeeService.editEmployee(employee, (String) SecurityContextHolder.getContext().getAuthentication().getCredentials(), uploadUrl);
 
@@ -67,14 +71,18 @@ public class EmployeesController {
     @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT')")
     @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
-    public void createEmployee(@RequestPart Employee employee, @RequestPart Optional<MultipartFile> profilePic) {
+    public void createEmployee(@RequestPart @Parameter(schema = @Schema(type = "string", format = "binary")) Employee employee, @RequestPart Optional<MultipartFile> profilePic) {
+        if (!employee.getPassword().isPresent())
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         Optional<String> uploadUrl = handleEmployee(employee, profilePic);
         employeeService.createEmployee(employee, (String) SecurityContextHolder.getContext().getAuthentication().getCredentials(), uploadUrl);
     }
 
 
     private Optional<String> handleEmployee(Employee employee, Optional<MultipartFile> profilePic) {
-        if (!validateEmployee(employee) || employee.getAccountType() == Employee.AccountType.ROLE_ADMIN || !employee.getPassword().isPresent())
+
+        System.out.println(employee);
+        if (!validateEmployee(employee) || employee.getAccountType() == Employee.AccountType.ROLE_ADMIN)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         Optional<String> uploadUrl = Optional.empty();
         if (profilePic.isPresent())
@@ -84,7 +92,7 @@ public class EmployeesController {
 
 
     private boolean validateEmployee(Employee employee) {
-        return Stream.of(employee, employee.getAccountType(), employee.getName(), employee.getPhone(), employee.getPassword(), employee.getBranchId(), employee.getDateOfBirth(), employee.getEmail(), employee.getUsername(), employee.getFullName()).anyMatch(Objects::isNull);
+        return Stream.of(employee, employee.getAccountType(), employee.getName(), employee.getPhone(), employee.getDateOfBirth(), employee.getEmail(), employee.getUsername(), employee.getFullName()).noneMatch(Objects::isNull);
     }
 
 }

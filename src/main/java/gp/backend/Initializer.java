@@ -5,6 +5,7 @@ import gp.backend.dto.Institute;
 import gp.backend.service.EmployeeService;
 import gp.backend.service.InstituteService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
 
@@ -17,6 +18,9 @@ public class Initializer implements CommandLineRunner {
     private final InstituteService instituteService;
     private final EmployeeService employeeService;
 
+    @Value("${security.jwt.token.username}")
+    private String username;
+
     @Override
     public void run(String... args) throws Exception {
 
@@ -28,12 +32,12 @@ public class Initializer implements CommandLineRunner {
 
         Employee employee = new Employee();
         employee.setAccountType(Employee.AccountType.ROLE_ADMIN);
-        employee.setUsername("admin");
+        employee.setUsername(username);
         employee.setName("Alaa Sabateen");
         employee.setEmail("adminEmail");
         employee.setPhone("07788999");
         employee.setFullName("Alaa Khaled Mohammad Al-Sabateen");
-        employee.setPassword(Optional.of("admin"));
+        employee.setPassword(Optional.of("alaa"));
         employeeService.createEmployee(employee, institute.getId(), Optional.empty());
     }
 }

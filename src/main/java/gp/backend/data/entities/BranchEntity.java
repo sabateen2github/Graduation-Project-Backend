@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import javax.persistence.*;
+import java.util.List;
 
 @Entity
 @Getter
@@ -21,4 +22,7 @@ public class BranchEntity {
     private InstituteEntity institute;
     private double latitude;
     private double longitude;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "branch", cascade = CascadeType.ALL)
+    private List<QueueEntity> queues;
 }

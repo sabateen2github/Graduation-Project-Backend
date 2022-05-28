@@ -56,9 +56,11 @@ public class QueueService {
     @Transactional
     public void resetQueue(String instituteId, String branchId, String id) {
         QueueLockKey queueLockKey = QueueLockKey.builder().queueId(id).branchId(branchId).instituteId(instituteId).build();
+        InstituteEntity instituteEntity = institutesDAO.findById(instituteId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
         executeWithLock(queueLockKey, () -> {
             QueueEntity queueEntity = queueDAO.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-            if (!instituteId.equals(queueEntity.getInstitute().getId()))
+            if (!instituteId.equals(queueEntity.getInstitute().getId()) && !instituteEntity.isAdmin())
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
             List<BookedTurnQueueEntity> allQueues = bookedTurnQueueDAO.findAllById_QueueIdAndState(id, BookedTurnQueue.QueueState.ACTIVE);
             allQueues.forEach(item -> {
@@ -77,9 +79,10 @@ public class QueueService {
     @Transactional
     public void advanceQueue(String instituteId, String branchId, String id) {
         QueueLockKey queueLockKey = QueueLockKey.builder().queueId(id).branchId(branchId).instituteId(instituteId).build();
+        InstituteEntity instituteEntity = institutesDAO.findById(instituteId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         executeWithLock(queueLockKey, () -> {
             QueueEntity queueEntity = queueDAO.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-            if (!instituteId.equals(queueEntity.getInstitute().getId()))
+            if (!instituteId.equals(queueEntity.getInstitute().getId()) && !instituteEntity.isAdmin())
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
 
             queueEntity.setPhysicalSize(queueEntity.getPhysicalSize() - 1);
@@ -191,7 +194,8 @@ public class QueueService {
 
     public void editQueueSpec(String instituteId, QueueSpec queueSpec) {
         QueueEntity queueEntity = queueDAO.findById(queueSpec.getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        if (!queueEntity.getInstitute().getId().equals(instituteId))
+        InstituteEntity instituteEntity = institutesDAO.findById(instituteId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        if (!queueEntity.getInstitute().getId().equals(instituteId) && !instituteEntity.isAdmin())
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         queueEntity.setName(queueSpec.getName());
         queueDAO.save(queueEntity);
@@ -203,9 +207,12 @@ public class QueueService {
         InstituteEntity instituteEntity = institutesDAO.findById(instituteId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         BranchEntity branchEntity = branchDAO.findById(queueSpec.getBranchId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
+        if (!branchEntity.getInstitute().getId().equals(instituteId) && !instituteEntity.isAdmin())
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+
         QueueEntity queueEntity = new QueueEntity();
         queueEntity.setName(queueSpec.getName());
-        queueEntity.setInstitute(instituteEntity);
+        queueEntity.setInstitute(branchEntity.getInstitute());
         queueEntity.setBranch(branchEntity);
         queueEntity.setAverageTime(5);
         queueDAO.save(queueEntity);
@@ -224,10 +231,13 @@ public class QueueService {
     }
 
     public void deleteQueue(String instituteId, String branchId, String id) {
-        // TODO: check if related bookedTurnQueueEntities are also deleted
+
         QueueEntity queueEntity = queueDAO.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        if (!instituteId.equals(queueEntity.getInstitute().getId()))
+        InstituteEntity instituteEntity = institutesDAO.findById(instituteId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        if (!instituteEntity.getId().equals(queueEntity.getInstitute().getId()) && !instituteEntity.isAdmin())
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+
         queueDAO.deleteById(id);
     }
 

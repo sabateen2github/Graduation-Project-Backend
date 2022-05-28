@@ -101,7 +101,8 @@ public class QueueController {
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT')")
     @PostMapping("/queue")
     public void createQueueSpec(@RequestBody QueueSpec queueSpec) {
-        if (queueSpec == null || StringUtils.isEmpty(queueSpec.getName()) || StringUtils.isEmpty(queueSpec.getId()) || StringUtils.isEmpty(queueSpec.getBranchId()))
+        System.out.println(queueSpec);
+        if (queueSpec == null || StringUtils.isEmpty(queueSpec.getName()) || StringUtils.isEmpty(queueSpec.getBranchId()))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         queueService.createQueueSpec((String) SecurityContextHolder.getContext().getAuthentication().getCredentials(), queueSpec);
     }
@@ -124,10 +125,10 @@ public class QueueController {
     }
 
     @GetMapping("/queues/all")
-    public List<Queue> getAllQueues(@RequestParam String branchId) {
-        if (StringUtils.isEmpty(branchId))
+    public List<Queue> getAllQueues(@RequestParam String instituteId, @RequestParam String branchId) {
+        if (StringUtils.isEmpty(branchId) || StringUtils.isEmpty(instituteId))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-        return queueService.getAllQueues((String) SecurityContextHolder.getContext().getAuthentication().getCredentials(), branchId);
+        return queueService.getAllQueues(instituteId, branchId);
     }
 
 }

@@ -54,36 +54,9 @@ public class EmployeeService {
         InstituteEntity instituteEntity = institutesDAO.findById(instituteId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         if (validatedEmployee.getAccountType() == Employee.AccountType.ROLE_ADMIN && !instituteEntity.isAdmin())
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+
         EmployeeEntity employeeEntity = new EmployeeEntity();
         employeeEntity.setInstitute(instituteEntity);
-        saveEmployee(validatedEmployee, instituteId, employeeEntity, profilePic);
-    }
-
-    public void editEmployee(Employee validatedEmployee, String instituteId, Optional<String> profilePic) {
-        EmployeeEntity employeeEntity = employeeDAO.findByInstitute_IdAndId(instituteId, validatedEmployee.getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        if (validatedEmployee.getAccountType() == Employee.AccountType.ROLE_ADMIN && !employeeEntity.getInstitute().isAdmin())
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
-        saveEmployee(validatedEmployee, instituteId, employeeEntity, profilePic);
-    }
-
-
-    private UserDataDTO getUserDataDTO(Employee validatedEmployee, String instituteId) {
-        UserDataDTO userDataDTO = new UserDataDTO();
-        if (validatedEmployee.getAccountType() == Employee.AccountType.ROLE_MANAGEMENT) {
-            userDataDTO.setAppUserRoles(Arrays.asList(UserDataDTO.AppUserRolesEnum.MANAGEMENT));
-        } else if (validatedEmployee.getAccountType() == Employee.AccountType.ROLE_HELP_DESK)
-            userDataDTO.setAppUserRoles(Arrays.asList(UserDataDTO.AppUserRolesEnum.HELP_DESK));
-        else if (validatedEmployee.getAccountType() == Employee.AccountType.ROLE_ADMIN)
-            userDataDTO.setAppUserRoles(Arrays.asList(UserDataDTO.AppUserRolesEnum.ADMIN));
-        else throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED);
-        userDataDTO.setUsername(validatedEmployee.getUsername());
-        userDataDTO.setPassword(validatedEmployee.getPassword().get());
-        userDataDTO.setInstituteId(instituteId);
-        return userDataDTO;
-    }
-
-    private void saveEmployee(Employee validatedEmployee, String instituteId, EmployeeEntity employeeEntity, Optional<String> profilePic) {
-        UserDataDTO userDataDTO = getUserDataDTO(validatedEmployee, instituteId);
 
         if (validatedEmployee.getBranchId() != null) {
             BranchEntity branchEntity = branchDAO.findById(validatedEmployee.getBranchId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
@@ -100,7 +73,58 @@ public class EmployeeService {
         profilePic.ifPresent(employeeEntity::setProfilePic);
 
         employeeDAO.save(employeeEntity);
+
+        UserDataDTO userDataDTO = new UserDataDTO();
+        if (validatedEmployee.getAccountType() == Employee.AccountType.ROLE_MANAGEMENT) {
+            userDataDTO.setAppUserRoles(Arrays.asList(UserDataDTO.AppUserRolesEnum.MANAGEMENT));
+        } else if (validatedEmployee.getAccountType() == Employee.AccountType.ROLE_HELP_DESK)
+            userDataDTO.setAppUserRoles(Arrays.asList(UserDataDTO.AppUserRolesEnum.HELP_DESK));
+        else if (validatedEmployee.getAccountType() == Employee.AccountType.ROLE_ADMIN)
+            userDataDTO.setAppUserRoles(Arrays.asList(UserDataDTO.AppUserRolesEnum.ADMIN));
+        else throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED);
+        userDataDTO.setUsername(validatedEmployee.getUsername());
+        userDataDTO.setPassword(validatedEmployee.getPassword().orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST)));
+        userDataDTO.setInstituteId(instituteId);
+
         authApi.signup(userDataDTO);
+    }
+
+    public void editEmployee(Employee validatedEmployee, String instituteId, Optional<String> profilePic) {
+        EmployeeEntity employeeEntity = employeeDAO.findByInstitute_IdAndId(instituteId, validatedEmployee.getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        if (validatedEmployee.getAccountType() == Employee.AccountType.ROLE_ADMIN && !employeeEntity.getInstitute().isAdmin())
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+
+        String oldUsername = employeeEntity.getUsername();
+
+        if (validatedEmployee.getBranchId() != null) {
+            BranchEntity branchEntity = branchDAO.findById(validatedEmployee.getBranchId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            employeeEntity.setBranch(branchEntity);
+        }
+
+        employeeEntity.setUsername(validatedEmployee.getUsername());
+        employeeEntity.setEmail(validatedEmployee.getEmail());
+        employeeEntity.setAccountType(validatedEmployee.getAccountType());
+        employeeEntity.setFullName(validatedEmployee.getFullName());
+        employeeEntity.setName(validatedEmployee.getName());
+        employeeEntity.setPhone(validatedEmployee.getPhone());
+        employeeEntity.setDateOfBirth(validatedEmployee.getDateOfBirth());
+        profilePic.ifPresent(employeeEntity::setProfilePic);
+
+        employeeDAO.save(employeeEntity);
+
+        UserDataDTO userDataDTO = new UserDataDTO();
+        if (validatedEmployee.getAccountType() == Employee.AccountType.ROLE_MANAGEMENT) {
+            userDataDTO.setAppUserRoles(Arrays.asList(UserDataDTO.AppUserRolesEnum.MANAGEMENT));
+        } else if (validatedEmployee.getAccountType() == Employee.AccountType.ROLE_HELP_DESK)
+            userDataDTO.setAppUserRoles(Arrays.asList(UserDataDTO.AppUserRolesEnum.HELP_DESK));
+        else if (validatedEmployee.getAccountType() == Employee.AccountType.ROLE_ADMIN)
+            userDataDTO.setAppUserRoles(Arrays.asList(UserDataDTO.AppUserRolesEnum.ADMIN));
+        else throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED);
+        userDataDTO.setUsername(oldUsername);
+        userDataDTO.setPassword(validatedEmployee.getPassword().orElse(null));
+        userDataDTO.setInstituteId(instituteId);
+        userDataDTO.setNewUsername(validatedEmployee.getUsername());
+        authApi.editUser(userDataDTO);
     }
 
 
@@ -113,8 +137,7 @@ public class EmployeeService {
         employee.setName(employeeEntity.getName());
         employee.setDateOfBirth(employeeEntity.getDateOfBirth());
         BranchEntity branch = employeeEntity.getBranch();
-        if (branch != null)
-            employee.setBranchId(branch.getId());
+        if (branch != null) employee.setBranchId(branch.getId());
         employee.setUsername(employeeEntity.getUsername());
         employee.setId(employeeEntity.getId());
         employee.setProfilePic(Optional.ofNullable(employeeEntity.getProfilePic()));
@@ -126,6 +149,6 @@ public class EmployeeService {
         if (StringUtils.isEmpty(searchTerm))
             return employeeDAO.findByInstitute_Id(instituteId).stream().map(this::fillDTO).collect(Collectors.toList());
 
-        return employeeDAO.findByInstitute_IdAndNameOrFullNameOrIdContaining(instituteId, searchTerm, searchTerm, searchTerm).stream().map(this::fillDTO).collect(Collectors.toList());
+        return employeeDAO.findByInstitute_IdContainingIgnoreCaseAndNameContainingIgnoreCaseOrFullNameContainingIgnoreCaseOrIdContainingIgnoreCase(instituteId, searchTerm, searchTerm, searchTerm).stream().map(this::fillDTO).collect(Collectors.toList());
     }
 }

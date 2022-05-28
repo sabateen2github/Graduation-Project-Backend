@@ -109,7 +109,6 @@ public class JwtTokenProvider {
             Map role = (Map) roles.get(0);
             return Collections.singletonList(AppUserRole.valueOf(String.valueOf(role.get("authority"))));
         }
-
     }
 
     public String resolveToken(HttpServletRequest req) {

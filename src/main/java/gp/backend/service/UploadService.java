@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -21,8 +22,16 @@ public class UploadService {
 
     public String upload(MultipartFile multipartFile) {
 
-        String filename = Base64.getEncoder().encodeToString((multipartFile.getOriginalFilename() + "-" + multipartFile.getName() + "-" + new Date()).getBytes(StandardCharsets.UTF_8));
-        try (FileOutputStream fileOutputStream = new FileOutputStream("./uploads/" + filename)) {
+        String filename = Base64.getEncoder().encodeToString((multipartFile.getOriginalFilename() + "-" + multipartFile.getName() + "-" + new Date()).getBytes(StandardCharsets.UTF_8)) + ".bin";
+        File file = new File("./uploads/", filename);
+        file.getParentFile().mkdirs();
+        try {
+            file.createNewFile();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
             IOUtils.copyLarge(multipartFile.getInputStream(), fileOutputStream);
         } catch (FileNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);

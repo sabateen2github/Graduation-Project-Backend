@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import javax.persistence.*;
+import java.util.List;
 
 @Entity
 @Getter
@@ -22,5 +23,9 @@ public class InstituteEntity {
 
     private boolean admin;
 
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "institute", cascade = CascadeType.ALL)
+    private List<BranchEntity> branches;
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "institute", cascade = CascadeType.ALL)
+    private List<EmployeeEntity> employees;
 
 }

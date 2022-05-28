@@ -1,8 +1,8 @@
 {
   "openapi": "3.0.1",
   "info": {
-    "title": "My API",
-    "version": "v1"
+    "title": "auth-backend",
+    "version": "1.0.0"
   },
   "servers": [
     {
@@ -12,6 +12,39 @@
   ],
   "paths": {
     "/users/signup": {
+      "put": {
+        "tags": [
+          "user-controller"
+        ],
+        "operationId": "editUser",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserDataDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
       "post": {
         "tags": [
           "user-controller"
@@ -226,6 +259,9 @@
             "type": "string"
           },
           "instituteId": {
+            "type": "string"
+          },
+          "newUsername": {
             "type": "string"
           }
         }

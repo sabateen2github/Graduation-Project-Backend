@@ -9,6 +9,6 @@ import java.util.List;
 @Repository
 public interface InstitutesDAO extends JpaRepository<InstituteEntity, String> {
 
-    public List<InstituteEntity> findByNameOrIdContaining(String searchTermName, String searchTermId);
+    public List<InstituteEntity> findByNameContainingIgnoreCaseOrIdContainingIgnoreCase(String searchTermName, String searchTermId);
 
 }

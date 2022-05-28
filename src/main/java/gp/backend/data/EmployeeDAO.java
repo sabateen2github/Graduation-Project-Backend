@@ -10,7 +10,7 @@ import java.util.Optional;
 @Repository
 public interface EmployeeDAO extends JpaRepository<EmployeeEntity, String> {
 
-    public List<EmployeeEntity> findByInstitute_IdAndNameOrFullNameOrIdContaining(String instituteId, String searchTermName, String searchTermFull, String searchTermId);
+    public List<EmployeeEntity> findByInstitute_IdContainingIgnoreCaseAndNameContainingIgnoreCaseOrFullNameContainingIgnoreCaseOrIdContainingIgnoreCase(String instituteId, String searchTermName, String searchTermFull, String searchTermId);
 
     public List<EmployeeEntity> findByInstitute_Id(String instituteId);
 

@@ -4,10 +4,13 @@ import gp.backend.dto.Institute;
 import gp.backend.service.InstituteService;
 import gp.backend.service.UploadService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -50,19 +53,18 @@ public class InstituteController {
 
     @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @PostMapping
-    public void createInstitute(@RequestPart Institute institute, @RequestPart Optional<MultipartFile> profilePic) {
+    @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    public void createInstitute(@RequestPart @Parameter(schema = @Schema(type = "string", format = "binary")) Institute institute, @RequestPart Optional<MultipartFile> profilePic) {
         Optional<String> uploadUrl = handleInstitute(institute, profilePic);
         instituteService.createInstitute(institute, uploadUrl, false);
     }
 
     @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGEMENT')")
-    @PutMapping()
-    public void updateInstitute(@RequestPart Institute institute, @RequestPart Optional<MultipartFile> profilePic) {
+    @PutMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    public void updateInstitute(@RequestPart @Parameter(schema = @Schema(type = "string", format = "binary")) Institute institute, @RequestPart Optional<MultipartFile> profilePic) {
         Optional<String> uploadUrl = handleInstitute(institute, profilePic);
         instituteService.saveInstitute((String) SecurityContextHolder.getContext().getAuthentication().getCredentials(), institute, uploadUrl);
-
     }
 
     @Operation(security = @SecurityRequirement(name = "bearerAuth"))
@@ -84,6 +86,6 @@ public class InstituteController {
     }
 
     private boolean validateInstitute(Institute institute) {
-        return Stream.of(institute.getEmail(), institute.getName(), institute.getPhone()).anyMatch(StringUtils::isEmpty);
+        return Stream.of(institute.getEmail(), institute.getName(), institute.getPhone()).noneMatch(StringUtils::isEmpty);
     }
 }

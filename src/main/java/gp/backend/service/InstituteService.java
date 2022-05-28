@@ -22,7 +22,8 @@ public class InstituteService {
 
 
     public List<Institute> searchInstitutes(Optional<String> searchTerm) {
-        return searchTerm.map(s -> institutesDAO.findByNameOrIdContaining(s, s).stream().map(this::mapFromEntity).collect(Collectors.toList())).orElseGet(() -> institutesDAO.findAll().stream().map(this::mapFromEntity).collect(Collectors.toList()));
+
+        return searchTerm.map(s -> institutesDAO.findByNameContainingIgnoreCaseOrIdContainingIgnoreCase(s, s).stream().map(this::mapFromEntity).collect(Collectors.toList())).orElseGet(() -> institutesDAO.findAll().stream().map(this::mapFromEntity).collect(Collectors.toList()));
     }
 
 

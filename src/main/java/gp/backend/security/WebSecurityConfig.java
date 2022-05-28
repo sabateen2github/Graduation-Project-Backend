@@ -38,6 +38,12 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/api-docs").permitAll()
                 .antMatchers(HttpMethod.GET, "/institute/{id}").permitAll()
                 .antMatchers(HttpMethod.GET, "/institute").permitAll()
+                .antMatchers(HttpMethod.GET, "/files/{filename}").permitAll()
+                .antMatchers(HttpMethod.GET, "/branches").permitAll()
+                .antMatchers(HttpMethod.GET, "/branches/{id}").permitAll()
+                .antMatchers(HttpMethod.GET, "/queues/queues/all").permitAll()
+                .antMatchers(HttpMethod.GET, "/queues/queues/all").permitAll()
+                .antMatchers("/h2-console/**/**").permitAll()
                 // Disallow everything else..
                 .anyRequest().authenticated();
 
@@ -54,6 +60,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     public void configure(WebSecurity web) {
         web.ignoring().antMatchers("/api-docs");
+        web.ignoring()
+                .antMatchers("/h2-console/**/**");
     }
 
 

@@ -64,15 +64,27 @@ public class BranchService {
         branchDAO.save(mapEntityFromBranch(validatedBranch, branchEntity));
     }
 
-    public void createBranch(String instituteId, Branch validatedBranch) {
+    public Branch createBranch(String instituteId, Branch validatedBranch) {
 
-        InstituteEntity instituteEntity = institutesDAO.findById(instituteId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        if (instituteEntity.getId().equals(instituteId)) {
+        InstituteEntity instituteEntity = institutesDAO.findById(validatedBranch.getInstituteId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        InstituteEntity callerEntity = institutesDAO.findById(instituteId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        if (!instituteEntity.getId().equals(callerEntity.getId()) && !callerEntity.isAdmin()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
 
         BranchEntity branch = new BranchEntity();
         branch.setInstitute(instituteEntity);
-        branchDAO.save(mapEntityFromBranch(validatedBranch, branch));
+        return mapEntityToBranch(branchDAO.save(mapEntityFromBranch(validatedBranch, branch)));
+    }
+
+    public void deleteBranch(String instituteId, String id) {
+        InstituteEntity callerEntity = institutesDAO.findById(instituteId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        BranchEntity branchEntity = branchDAO.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        if (!branchEntity.getInstitute().getId().equals(callerEntity.getId()) && !callerEntity.isAdmin()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+        branchDAO.delete(branchEntity);
     }
 }
