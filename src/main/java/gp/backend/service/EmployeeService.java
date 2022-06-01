@@ -33,7 +33,7 @@ public class EmployeeService {
 
 
     public Employee getEmployee(String instituteId, String validatedId) {
-        EmployeeEntity employeeEntity = employeeDAO.findById(validatedId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        EmployeeEntity employeeEntity = employeeDAO.findById(Long.valueOf(validatedId)).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         return fillDTO(employeeEntity);
     }
 
@@ -90,7 +90,7 @@ public class EmployeeService {
     }
 
     public void editEmployee(Employee validatedEmployee, String instituteId, Optional<String> profilePic) {
-        EmployeeEntity employeeEntity = employeeDAO.findById(validatedEmployee.getId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        EmployeeEntity employeeEntity = employeeDAO.findById(Long.valueOf(validatedEmployee.getId())).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         if (validatedEmployee.getAccountType() == Employee.AccountType.ROLE_ADMIN && !employeeEntity.getInstitute().isAdmin())
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
 

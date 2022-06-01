@@ -14,7 +14,7 @@ public interface EmployeeDAO extends JpaRepository<EmployeeEntity, Long> {
 
     public List<EmployeeEntity> findByInstitute_Id(Long instituteId);
 
-    public Optional<EmployeeEntity> findById(String id);
+    public Optional<EmployeeEntity> findById(Long id);
 
     public Optional<EmployeeEntity> findByUsername(String username);
 
