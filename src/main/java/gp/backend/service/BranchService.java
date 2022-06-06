@@ -11,8 +11,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -96,7 +97,7 @@ public class BranchService {
 
         BranchEntity.Day[] days = {BranchEntity.Day.Friday, BranchEntity.Day.Monday, BranchEntity.Day.Sunday, BranchEntity.Day.Saturday, BranchEntity.Day.Wednesday, BranchEntity.Day.Tuesday, BranchEntity.Day.Thursday};
         if (validatedBranch.getWorkingDays() == null) {
-            List<Branch.WorkingDay> workingDays = new ArrayList<>();
+            Set<Branch.WorkingDay> workingDays = new HashSet<>();
             for (int i = 0; i < days.length; i++) {
                 Branch.WorkingDay workingDay = new Branch.WorkingDay();
                 workingDay.setDay(days[i]);
@@ -105,6 +106,7 @@ public class BranchService {
                 workingDay.setPeriodInMinutes(12 * 60);
                 workingDays.add(workingDay);
             }
+            validatedBranch.setWorkingDays(workingDays);
         }
 
         BranchEntity branch = new BranchEntity();
