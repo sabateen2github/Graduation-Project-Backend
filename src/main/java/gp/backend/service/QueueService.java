@@ -20,10 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Comparator;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -93,8 +90,22 @@ public class QueueService {
             BookedTurnQueueEntity bookedEntity = bookedTurnQueueDAO.findById_QueueIdAndTurnId(Long.valueOf(id), queueEntity.getCurrentTurnId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
             bookedEntity.setState(BookedTurnQueue.QueueState.COMPLETED);
 
-            List<BookedTurnQueueEntity> nextTurns = bookedTurnQueueDAO.findAllById_QueueIdAndPositionGreaterThan(Long.valueOf(id), bookedEntity.getPosition());
-            Optional<BookedTurnQueueEntity> next = nextTurns.stream().peek(turn -> turn.setPosition(turn.getPosition() - 1)).min(Comparator.comparingInt(BookedTurnQueueEntity::getPosition));
+            List<BookedTurnQueueEntity> nextTurns = bookedTurnQueueDAO.findAllById_QueueIdAndPositionGreaterThan(Long.valueOf(id), bookedEntity.getPosition()).stream().sorted(Comparator.comparingInt(BookedTurnQueueEntity::getPosition)).map(it -> {
+                it.setPosition(it.getPosition() - 1);
+                return it;
+            }).collect(Collectors.toList());
+
+            Optional<BookedTurnQueueEntity> next = Optional.empty();
+
+            if (nextTurns.size() > 0) {
+                if (nextTurns.get(0).isPhysical()) {
+                    next = Optional.of(nextTurns.get(0));
+                } else {
+                    nextTurns.get(0).setState(BookedTurnQueue.QueueState.CANCELLED);
+                    next = nextTurns.stream().skip(1).filter(BookedTurnQueueEntity::isPhysical).findFirst();
+                }
+            }
+
             if (next.isPresent()) {
                 queueEntity.setCurrentTurnId(next.get().getTurnId());
             } else {
@@ -252,10 +263,18 @@ public class QueueService {
     }
 
     public List<QueueSpec> getAllQueueSpecs(String instituteId, String branchId) {
+
+        if (isClosed(branchDAO.findById(Long.valueOf(branchId)).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND)))) {
+            return Arrays.asList();
+        }
+
         return queueDAO.findAllByBranch_Id(Long.valueOf(branchId)).stream().map(this::mapToQueueSpec).collect(Collectors.toList());
     }
 
     public List<Queue> getAllQueues(String instituteId, String branchId) {
+        if (isClosed(branchDAO.findById(Long.valueOf(branchId)).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND)))) {
+            return Arrays.asList();
+        }
         return queueDAO.findAllByBranch_Id(Long.valueOf(branchId)).stream().map(this::mapToQueue).collect(Collectors.toList());
     }
 
@@ -297,6 +316,60 @@ public class QueueService {
         bookedTurnQueue.setPosition(item.getPosition());
         bookedTurnQueue.setState(item.getState());
         return bookedTurnQueue;
+    }
+
+
+    private boolean isClosed(BranchEntity branch) {
+        Optional<BranchEntity.WorkingDay> workingDay = branch.getWorkingDays().stream().filter(it -> it.getDay().equals(getCurrentDay())).findAny();
+        if (workingDay.isPresent()) {
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(new Date());
+            int hour = calendar.get(Calendar.HOUR_OF_DAY);
+            int minute = calendar.get(Calendar.MINUTE);
+            int minutes = hour * 60 + minute;
+
+            int hourBranch = workingDay.get().getHour();
+            int minuteBranch = workingDay.get().getMinute();
+            int minutesBranch = hourBranch * 60 + minuteBranch;
+            int period = workingDay.get().getPeriodInMinutes();
+
+            if (minutesBranch + period >= 24 * 60)
+                period = 24 * 60 - minutesBranch - 1;
+
+            if (minutesBranch <= minutes && minutes <= minuteBranch + period) {
+                return true;
+            }
+            return false;
+        }
+        return false;
+    }
+
+
+    private BranchEntity.Day getCurrentDay() {
+
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(new Date());
+        int dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
+
+        switch (dayOfWeek) {
+            case Calendar.SUNDAY:
+                return BranchEntity.Day.Sunday;
+            case Calendar.MONDAY:
+                return BranchEntity.Day.Monday;
+            case Calendar.TUESDAY:
+                return BranchEntity.Day.Tuesday;
+            case Calendar.WEDNESDAY:
+                return BranchEntity.Day.Wednesday;
+            case Calendar.THURSDAY:
+                return BranchEntity.Day.Thursday;
+            case Calendar.FRIDAY:
+                return BranchEntity.Day.Friday;
+            case Calendar.SATURDAY:
+                return BranchEntity.Day.Saturday;
+            default:
+                throw new IllegalStateException("should not be reached!");
+        }
+
     }
 
 

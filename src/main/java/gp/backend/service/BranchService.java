@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -31,14 +32,33 @@ public class BranchService {
         branch.setPhone(item.getPhone());
         branch.setPhone(item.getPhone());
         branch.setInstituteId(String.valueOf(item.getInstitute().getId()));
+        branch.setWorkingDays(item.getWorkingDays().stream().map(it -> {
+            Branch.WorkingDay workingDay = new Branch.WorkingDay();
+            workingDay.setDay(it.getDay());
+            workingDay.setHour(it.getHour());
+            workingDay.setMinute(it.getMinute());
+            workingDay.setPeriodInMinutes(it.getPeriodInMinutes());
+            return workingDay;
+        }).collect(Collectors.toSet()));
         return branch;
     }
 
     private BranchEntity mapEntityFromBranch(Branch item, BranchEntity branch) {
+
         branch.setLatitude(item.getLocation().getLat());
         branch.setLongitude(item.getLocation().getLng());
-        branch.setName(item.getName());
-        branch.setPhone(item.getPhone());
+        if (item.getName() != null) branch.setName(item.getName());
+        if (item.getPhone() != null) branch.setPhone(item.getPhone());
+        if (item.getWorkingDays() != null)
+            branch.setWorkingDays(item.getWorkingDays().stream().map(it -> {
+                BranchEntity.WorkingDay workingDay = new BranchEntity.WorkingDay();
+                workingDay.setDay(it.getDay());
+                workingDay.setHour(it.getHour());
+                workingDay.setMinute(it.getMinute());
+                workingDay.setPeriodInMinutes(it.getPeriodInMinutes());
+                return workingDay;
+            }).collect(Collectors.toSet()));
+
         return branch;
     }
 
@@ -71,6 +91,20 @@ public class BranchService {
 
         if (!instituteEntity.getId().equals(callerEntity.getId()) && !callerEntity.isAdmin()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+
+        BranchEntity.Day[] days = {BranchEntity.Day.Friday, BranchEntity.Day.Monday, BranchEntity.Day.Sunday, BranchEntity.Day.Saturday, BranchEntity.Day.Wednesday, BranchEntity.Day.Tuesday, BranchEntity.Day.Thursday};
+        if (validatedBranch.getWorkingDays() == null) {
+            List<Branch.WorkingDay> workingDays = new ArrayList<>();
+            for (int i = 0; i < days.length; i++) {
+                Branch.WorkingDay workingDay = new Branch.WorkingDay();
+                workingDay.setDay(days[i]);
+                workingDay.setHour(8);
+                workingDay.setMinute(0);
+                workingDay.setPeriodInMinutes(12 * 60);
+                workingDays.add(workingDay);
+            }
         }
 
         BranchEntity branch = new BranchEntity();
